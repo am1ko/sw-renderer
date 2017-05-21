@@ -38,6 +38,22 @@ fn draw_vector(v: Vector2, o: Vector2, pixels: &mut [u8;WIN_WIDTH*WIN_HEIGHT*BYT
     }
 }
 
+fn rotate_vec(v: &mut Vector2, a: f32)
+{
+    // transformation
+    // unit vector i lands to cos(a)*i + sin(a)*j
+    // unit vector j lands to -sin(a)*i + cos(a)*j
+    // [cos(a), -sin(a)][x]
+    // [sin(a),  cos(a)][y]
+    //   ^        ^      ^
+    // new i    new j  input
+
+    let new_x = a.cos()*v.x + -1.0*a.sin()*v.y;
+    let new_y = a.sin()*v.x + a.cos()*v.y;
+    v.x = new_x;
+    v.y = new_y;
+}
+
 fn main() {
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
@@ -74,6 +90,7 @@ fn main() {
                 Event::KeyPressed { code: Key::S, .. } |
                 Event::KeyPressed { code: Key::Down, .. } |
                 Event::KeyPressed { code: Key::J, .. } => {v.y = v.y - 1.0;},
+                Event::KeyPressed { code: Key::R, .. } => {rotate_vec(&mut v, 0.1); },
                 _ => {}
             }
         }
