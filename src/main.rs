@@ -26,7 +26,10 @@ struct Vector3 {
 impl Sub for Vector2 {
     type Output = Vector2;
     fn sub(self, other: Vector2) -> Vector2 {
-        Vector2{x: self.x - other.x, y: self.y - other.y}
+        Vector2 {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 }
 
@@ -44,11 +47,17 @@ fn set_pixel(x: usize,
 }
 
 fn normalize(v: Vector2) -> Vector2 {
-    return Vector2{x: (1.0 + v.x) / 2.0, y: (1.0 + v.y) / 2.0};
+    return Vector2 {
+        x: (1.0 + v.x) / 2.0,
+        y: (1.0 + v.y) / 2.0,
+    };
 }
 
 fn to_raster_space(v: Vector2) -> Vector2 {
-    return Vector2{x: v.x*WIN_WIDTH as f32, y: v.y*WIN_HEIGHT as f32};
+    return Vector2 {
+        x: v.x * WIN_WIDTH as f32,
+        y: v.y * WIN_HEIGHT as f32,
+    };
 }
 
 fn project(v: Vector3) -> Vector2 {
@@ -103,8 +112,7 @@ fn draw_cube(pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
                     }];
 
     for v in vertexes.iter() {
-        if true
-        {
+        if true {
             let v_proj = Vector2 {
                 x: v.x / v.z,
                 y: v.y / v.z,
@@ -114,26 +122,24 @@ fn draw_cube(pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
             set_pixel(r.x as usize, r.y as usize, 0xFFFFFFFF, pixels);
         }
     }
-        /*
-        let a = project(vertexes[i]);
-        let b = project(vertexes[(i+1) % vertexes.len()]);
-        let c = project(vertexes[(i+2) % vertexes.len()]);
-        draw_vector(b - a, a, pixels);
-        draw_vector(c - b, b, pixels);
-        draw_vector(a - c, c, pixels);
-        */
-        /*
-    for i in 0..vertexes.len()
-    {
-        let a = project(vertexes[i]);
-
-        for j in 0..vertexes.len()
-        {
-            let b = project(vertexes[(i+1) % vertexes.len()]);
-            draw_vector(b - a, a, pixels);
-        }
-    }
-    */
+    // let a = project(vertexes[i]);
+    // let b = project(vertexes[(i+1) % vertexes.len()]);
+    // let c = project(vertexes[(i+2) % vertexes.len()]);
+    // draw_vector(b - a, a, pixels);
+    // draw_vector(c - b, b, pixels);
+    // draw_vector(a - c, c, pixels);
+    //
+    // for i in 0..vertexes.len()
+    // {
+    // let a = project(vertexes[i]);
+    //
+    // for j in 0..vertexes.len()
+    // {
+    // let b = project(vertexes[(i+1) % vertexes.len()]);
+    // draw_vector(b - a, a, pixels);
+    // }
+    // }
+    //
 }
 
 fn draw_vector(v: Vector2,
@@ -230,7 +236,7 @@ fn main() {
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
 
-            //draw_vector(v, o, &mut display_buffer);
+            // draw_vector(v, o, &mut display_buffer);
 
             texture.update_from_pixels(&display_buffer, WIN_WIDTH as u32, WIN_HEIGHT as u32, 0, 0);
             sprite.set_texture(&texture, false);
