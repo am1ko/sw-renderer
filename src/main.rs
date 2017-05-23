@@ -1,37 +1,16 @@
 extern crate sfml;
+mod vector;
 
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::window::{Event, Key, style, VideoMode};
 use sfml::system::Clock;
-use std::ops::Sub;
+
+use vector::{Vector2, Vector3};
 
 const WIN_WIDTH: usize = 800;
 const WIN_HEIGHT: usize = 600;
 const BYTES_PER_PIXEL: usize = 4;
 const FPS: f32 = 60.0;
-
-#[derive(Copy, Clone)]
-struct Vector2 {
-    x: f32,
-    y: f32,
-}
-
-#[derive(Copy, Clone)]
-struct Vector3 {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-
-impl Sub for Vector2 {
-    type Output = Vector2;
-    fn sub(self, other: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-}
 
 fn set_pixel(x: usize,
              y: usize,
@@ -163,21 +142,6 @@ fn draw_vector(v: Vector2,
     }
 }
 
-fn rotate_vec(v: &mut Vector2, a: f32) {
-    // transformation
-    // unit vector i lands to cos(a)*i + sin(a)*j
-    // unit vector j lands to -sin(a)*i + cos(a)*j
-    // [cos(a), -sin(a)][x]
-    // [sin(a),  cos(a)][y]
-    //   ^        ^      ^
-    // new i    new j  input
-
-    let new_x = a.cos() * v.x + -1.0 * a.sin() * v.y;
-    let new_y = a.sin() * v.x + a.cos() * v.y;
-    v.x = new_x;
-    v.y = new_y;
-}
-
 fn main() {
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
@@ -224,7 +188,7 @@ fn main() {
                     v.y = v.y - 1.0;
                 }
                 Event::KeyPressed { code: Key::R, .. } => {
-                    rotate_vec(&mut v, 0.01);
+                    v.rotate(0.01);
                 }
                 _ => {}
             }
