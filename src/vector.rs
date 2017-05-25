@@ -13,6 +13,7 @@ pub struct Vector3 {
     pub z: f32,
 }
 
+/*
 impl Vector2 {
     pub fn rotate(&mut self, a: f32){
         // transformation
@@ -29,6 +30,7 @@ impl Vector2 {
         self.y = new_y;
     }
 }
+*/
 
 impl Sub for Vector2 {
     type Output = Vector2;

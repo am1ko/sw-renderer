@@ -12,6 +12,18 @@ const WIN_HEIGHT: usize = 600;
 const BYTES_PER_PIXEL: usize = 4;
 const FPS: f32 = 60.0;
 
+pub struct Mesh{
+    vertices: Vec<Vector3>
+    // rotation
+    // position
+}
+
+impl Mesh {
+    pub fn new() -> Mesh {
+        return Mesh{vertices: Vec::new()};
+    }
+}
+
 fn set_pixel(x: usize,
              y: usize,
              color: u32,
@@ -39,58 +51,8 @@ fn to_raster_space(v: Vector2) -> Vector2 {
     };
 }
 
-fn project(v: Vector3) -> Vector2 {
-    let proj = Vector2 {
-        x: v.x / v.z,
-        y: v.y / v.z,
-    };
-    let n = normalize(proj);
-    return to_raster_space(n);
-}
-
-fn draw_cube(pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-    let vertexes = [Vector3 {
-                        x: 1.0,
-                        y: -1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: -1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: 1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: 1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: -1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: -1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: 1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: 1.0,
-                        z: -3.0,
-                    }];
-
-    for v in vertexes.iter() {
+fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+    for v in mesh.vertices.iter() {
         if true {
             let v_proj = Vector2 {
                 x: v.x / v.z,
@@ -121,27 +83,6 @@ fn draw_cube(pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     //
 }
 
-fn draw_vector(v: Vector2,
-               o: Vector2,
-               pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-    let mut r = Vector2 {
-        x: o.x,
-        y: WIN_HEIGHT as f32 - o.y,
-    };
-    let dv = Vector2 {
-        x: v.x / 1000.0,
-        y: -1.0 * v.y / 1000.0,
-    };
-
-    for _ in 1..1000 {
-        if r.y >= 0.0 && r.x >= 0.0 {
-            set_pixel(r.x as usize, r.y as usize, 0xFF0000FF, pixels);
-            r.x = r.x + dv.x;
-            r.y = r.y + dv.y;
-        }
-    }
-}
-
 fn main() {
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
@@ -151,12 +92,49 @@ fn main() {
     let mut window = w.unwrap();
     window.set_vertical_sync_enabled(true);
 
-    let mut v = Vector2 { x: 30.0, y: 30.0 };
-    let o = Vector2 {
-        x: 400.0,
-        y: 300.0,
-    };
     let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
+
+    let mut cube = Mesh::new();
+    cube.vertices.append(&mut vec![Vector3 {
+                        x: 1.0,
+                        y: -1.0,
+                        z: -5.0,
+                    },
+                    Vector3 {
+                        x: 1.0,
+                        y: -1.0,
+                        z: -3.0,
+                    },
+                    Vector3 {
+                        x: 1.0,
+                        y: 1.0,
+                        z: -5.0,
+                    },
+                    Vector3 {
+                        x: 1.0,
+                        y: 1.0,
+                        z: -3.0,
+                    },
+                    Vector3 {
+                        x: -1.0,
+                        y: -1.0,
+                        z: -5.0,
+                    },
+                    Vector3 {
+                        x: -1.0,
+                        y: -1.0,
+                        z: -3.0,
+                    },
+                    Vector3 {
+                        x: -1.0,
+                        y: 1.0,
+                        z: -5.0,
+                    },
+                    Vector3 {
+                        x: -1.0,
+                        y: 1.0,
+                        z: -3.0,
+                    }]);
 
     loop {
         let mut sprite = Sprite::new();
@@ -170,37 +148,30 @@ fn main() {
                 Event::KeyPressed { code: Key::D, .. } |
                 Event::KeyPressed { code: Key::Right, .. } |
                 Event::KeyPressed { code: Key::L, .. } => {
-                    v.x = v.x + 1.0;
                 }
                 Event::KeyPressed { code: Key::A, .. } |
                 Event::KeyPressed { code: Key::Left, .. } |
                 Event::KeyPressed { code: Key::H, .. } => {
-                    v.x = v.x - 1.0;
                 }
                 Event::KeyPressed { code: Key::W, .. } |
                 Event::KeyPressed { code: Key::Up, .. } |
                 Event::KeyPressed { code: Key::K, .. } => {
-                    v.y = v.y + 1.0;
                 }
                 Event::KeyPressed { code: Key::S, .. } |
                 Event::KeyPressed { code: Key::Down, .. } |
                 Event::KeyPressed { code: Key::J, .. } => {
-                    v.y = v.y - 1.0;
                 }
                 Event::KeyPressed { code: Key::R, .. } => {
-                    v.rotate(0.01);
                 }
                 _ => {}
             }
         }
 
-        // rotate_vec(&mut v, 0.01);
-        draw_cube(&mut display_buffer);
+        render_mesh(&cube, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
 
-            // draw_vector(v, o, &mut display_buffer);
 
             texture.update_from_pixels(&display_buffer, WIN_WIDTH as u32, WIN_HEIGHT as u32, 0, 0);
             sprite.set_texture(&texture, false);
