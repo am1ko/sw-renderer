@@ -85,11 +85,22 @@ fn rotate_mesh(mesh: &mut Mesh, angle_x: f32, angle_y: f32, angle_z: f32) {
 }
 
 fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+    let m_rot_x =
+        Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
+                             RowVector4::new(0.0, mesh.angle_x.cos(), mesh.angle_x.sin(), 0.0),
+                             RowVector4::new(0.0, -mesh.angle_x.sin(), mesh.angle_x.cos(), 0.0),
+                             RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
     let m_rot_y =
         Matrix4::from_rows(&[RowVector4::new(mesh.angle_y.cos(), 0.0, -mesh.angle_y.sin(), 0.0),
                              RowVector4::new(0.0, 1.0, 0.0, 0.0),
                              RowVector4::new(mesh.angle_y.sin(), 0.0, mesh.angle_y.cos(), 0.0),
                              RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+    let m_rot_z =
+        Matrix4::from_rows(&[RowVector4::new(mesh.angle_z.cos(), -mesh.angle_z.sin(), 0.0, 0.0),
+                             RowVector4::new(mesh.angle_z.sin(), mesh.angle_z.cos(), 0.0, 0.0),
+                             RowVector4::new(0.0, 0.0, 1.0, 0.0),
+                             RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+
 
     let m_trans = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, mesh.position.x),
                                        RowVector4::new(0.0, 1.0, 0.0, mesh.position.y),
@@ -99,7 +110,7 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
 
     for v in mesh.vertices.iter() {
         /* model to world */
-        let v_xformed = m_trans * m_rot_y * v;
+        let v_xformed = m_trans * m_rot_x * m_rot_y * m_rot_z * v;
 
         /* TODO: world to view */
 
@@ -170,7 +181,7 @@ fn main() {
             }
         }
 
-        rotate_mesh(&mut cube, 0.0, 0.01, 0.0);
+        rotate_mesh(&mut cube, 0.00, 0.01 ,0.01);
         render_mesh(&cube, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
