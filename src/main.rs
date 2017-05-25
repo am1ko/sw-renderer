@@ -1,11 +1,10 @@
 extern crate sfml;
-mod vector;
+extern crate nalgebra as na;
 
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::window::{Event, Key, style, VideoMode};
 use sfml::system::Clock;
-
-use vector::{Vector2, Vector3};
+use na::{Vector2, Vector3, Vector4};
 
 const WIN_WIDTH: usize = 800;
 const WIN_HEIGHT: usize = 600;
@@ -13,7 +12,7 @@ const BYTES_PER_PIXEL: usize = 4;
 const FPS: f32 = 60.0;
 
 pub struct Mesh{
-    vertices: Vec<Vector3>
+    vertices: Vec<Vector3<f32>>
     // rotation
     // position
 }
@@ -37,50 +36,23 @@ fn set_pixel(x: usize,
     }
 }
 
-fn normalize(v: Vector2) -> Vector2 {
-    return Vector2 {
-        x: (1.0 + v.x) / 2.0,
-        y: (1.0 + v.y) / 2.0,
-    };
+fn normalize(v: Vector2<f32>) -> Vector2<f32> {
+    return Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
 }
 
-fn to_raster_space(v: Vector2) -> Vector2 {
-    return Vector2 {
-        x: v.x * WIN_WIDTH as f32,
-        y: v.y * WIN_HEIGHT as f32,
-    };
+fn to_raster_space(v: Vector2<f32>) -> Vector2<f32> {
+    return Vector2::new(v.x * WIN_WIDTH as f32, v.y * WIN_HEIGHT as f32);
 }
 
 fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     for v in mesh.vertices.iter() {
         if true {
-            let v_proj = Vector2 {
-                x: v.x / v.z,
-                y: v.y / v.z,
-            };
+            let v_proj = Vector2::new(v.x / v.z, v.y / v.z);
             let n = normalize(v_proj);
             let r = to_raster_space(n);
             set_pixel(r.x as usize, r.y as usize, 0xFFFFFFFF, pixels);
         }
     }
-    // let a = project(vertexes[i]);
-    // let b = project(vertexes[(i+1) % vertexes.len()]);
-    // let c = project(vertexes[(i+2) % vertexes.len()]);
-    // draw_vector(b - a, a, pixels);
-    // draw_vector(c - b, b, pixels);
-    // draw_vector(a - c, c, pixels);
-    //
-    // for i in 0..vertexes.len()
-    // {
-    // let a = project(vertexes[i]);
-    //
-    // for j in 0..vertexes.len()
-    // {
-    // let b = project(vertexes[(i+1) % vertexes.len()]);
-    // draw_vector(b - a, a, pixels);
-    // }
-    // }
-    //
 }
 
 fn main() {
@@ -95,46 +67,46 @@ fn main() {
     let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
 
     let mut cube = Mesh::new();
-    cube.vertices.append(&mut vec![Vector3 {
-                        x: 1.0,
-                        y: -1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: -1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: 1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: 1.0,
-                        y: 1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: -1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: -1.0,
-                        z: -3.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: 1.0,
-                        z: -5.0,
-                    },
-                    Vector3 {
-                        x: -1.0,
-                        y: 1.0,
-                        z: -3.0,
-                    }]);
+    cube.vertices.append(&mut vec![Vector3::new(
+                        1.0,
+                        -1.0,
+                        -5.0
+                    ),
+                    Vector3::new (
+                        1.0,
+                        -1.0,
+                        -3.0,
+                    ),
+                    Vector3::new (
+                        1.0,
+                        1.0,
+                        -5.0,
+                    ),
+                    Vector3::new (
+                        1.0,
+                        1.0,
+                        -3.0,
+                    ),
+                    Vector3::new (
+                        -1.0,
+                        -1.0,
+                        -5.0,
+                    ),
+                    Vector3::new (
+                        -1.0,
+                        -1.0,
+                        -3.0,
+                    ),
+                    Vector3::new (
+                        -1.0,
+                        1.0,
+                        -5.0,
+                    ),
+                    Vector3::new (
+                        -1.0,
+                        1.0,
+                        -3.0,
+                    )]);
 
     loop {
         let mut sprite = Sprite::new();

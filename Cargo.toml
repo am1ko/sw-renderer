@@ -5,3 +5,4 @@ authors = ["Mikko Ala-Louko <mikko.alalouko@gmail.com>"]
 
 [dependencies]
 sfml = "*"
+nalgebra = '*'
