@@ -60,9 +60,15 @@ fn draw_point(p: Vector2<f32>,
     }
 }
 
-// applies only for special case
-fn normalize(v: Vector2<f32>) -> Vector2<f32> {
-    return Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
+fn to_ndc_space(v: Vector2<f32>) -> Vector2<f32> {
+    let ret = Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
+
+    /*
+    assert!(ret.x >= 0.0 && ret.x <= 1.0);
+    assert!(ret.y >= 0.0 && ret.y <= 1.0);
+    */
+
+    return ret;
 }
 
 fn to_raster_space(v: Vector2<f32>) -> Vector2<f32> {
@@ -101,25 +107,69 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
                              RowVector4::new(0.0, 0.0, 1.0, 0.0),
                              RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
-
     let m_trans = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, mesh.position.x),
                                        RowVector4::new(0.0, 1.0, 0.0, mesh.position.y),
                                        RowVector4::new(0.0, 0.0, 1.0, mesh.position.z),
                                        RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
+    let model = m_trans * /*m_rot_z */ m_rot_y /* m_rot_x*/;
+    let view: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
+    let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33); // TODO(amiko)
+    //let projection: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
 
     for v in mesh.vertices.iter() {
-        /* model to world */
-        let v_xformed = m_trans * m_rot_x * m_rot_y * m_rot_z * v;
+        println!("-----------------------------------------------------");
+        /* Transformation from model space -> view space -> projection space */
+        let v_xformed = projection * view * model * v;
 
-        /* TODO: world to view */
+        /* Perspective division, far away points moved closer to origin */
+        /* To screen space. All visible points between [-1, 1]. */
+        let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
 
-        /* view to projection */
-        let v_proj = Vector2::new(v_xformed.x / v_xformed.z, v_xformed.y / v_xformed.z);
-        let n = normalize(v_proj);
+        /* To Normalized Device Coordinates. All visible points between [0, 1] */
+        let n = to_ndc_space(scr);
+
+        /* To actual screen pixel coordinates */
         let r = to_raster_space(n);
+
         draw_point(r, 0xFFFFFFFF, pixels);
+
+        let m = model * v;
+        let vi = view * m;
+        let p = projection * vi;
+        println!("MODEL SPACE");
+        println!("{}", v);
+        println!("WORLD SPACE");
+        println!("{}", m);
+        println!("VIEW SPACE");
+        println!("{}", vi);
+        println!("PROJECTION SPACE");
+        println!("{}", p);
+        println!("SCREEN SPACE");
+        println!("{}", scr);
+        println!("NDC SPACE");
+        println!("{}", n);
+        println!("RASTER SPACE");
+        println!("{}", r);
     }
+}
+
+fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
+    let deg_to_rad = std::f32::consts::PI / 180.0;
+    let size = n * (deg_to_rad * angle_of_view / 2.0).tan();
+    let l = -size;
+    let r = size;
+    let b = -size / aspect_ratio;
+    let t = size / aspect_ratio;
+
+    return Matrix4::from_rows(&[RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
+                                RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
+                                RowVector4::new(0.0,
+                                                0.0,
+                                                -(f + n) / (f - n),
+                                                -(2.0 * f * n) / (f - n)),
+                                RowVector4::new(0.0, 0.0, -1.0, 0.0)]);
+
 }
 
 fn main() {
@@ -181,7 +231,7 @@ fn main() {
             }
         }
 
-        rotate_mesh(&mut cube, 0.00, 0.01 ,0.01);
+        //rotate_mesh(&mut cube, 0.00, 0.01 ,0.01);
         render_mesh(&cube, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
