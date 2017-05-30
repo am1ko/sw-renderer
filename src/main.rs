@@ -44,6 +44,25 @@ fn set_pixel(x: usize,
     }
 }
 
+fn draw_line(p1: Vector2<f32>,
+             p2: Vector2<f32>,
+             color: u32,
+             pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+
+    let threshold = 1.0;
+    let sub = (p2 - p1);
+
+    let dist = (sub.x + sub.y).abs().sqrt();
+
+    if dist > threshold {
+        let middle = p1 + sub / 2.0;
+        set_pixel(middle.x as usize, middle.y as usize, color, pixels);
+
+        draw_line(p1, middle, color, pixels);
+        draw_line(middle, p2, color, pixels);
+    }
+}
+
 fn draw_point(p: Vector2<f32>,
               color: u32,
               pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
@@ -231,8 +250,13 @@ fn main() {
             }
         }
 
-        //rotate_mesh(&mut cube, 0.00, 0.01 ,0.01);
+        rotate_mesh(&mut cube, 0.00, 0.01, 0.01);
         render_mesh(&cube, &mut display_buffer);
+        /*
+        let p2 = Vector2::new(100.0, 200.0);
+        let p1 = Vector2::new(700.0, 500.0);
+        draw_line(p1, p2, 0xFFFFFFFF, &mut display_buffer);
+        */
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
