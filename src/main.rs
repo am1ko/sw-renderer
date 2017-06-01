@@ -14,9 +14,7 @@ const FPS: f32 = 60.0;
 pub struct Mesh {
     vertices: Vec<Vector4<f32>>,
     position: Vector4<f32>,
-    angle_x: f32,
-    angle_y: f32,
-    angle_z: f32,
+    angle: Vector3<f32>,
 }
 
 impl Mesh {
@@ -24,9 +22,7 @@ impl Mesh {
         return Mesh {
                    vertices: Vec::new(),
                    position: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                   angle_x: 0.0,
-                   angle_y: 0.0,
-                   angle_z: 0.0,
+                   angle: Vector3::new(0.0, 0.0, 0.0),
                };
     }
 }
@@ -50,15 +46,14 @@ fn draw_line(p1: Vector2<f32>,
              pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
 
     let threshold = 1.0;
-    let sub = (p2 - p1);
+    let sub = p2 - p1;
 
     let dist = (sub.x + sub.y).abs().sqrt();
 
     if dist > threshold {
         let middle = p1 + sub / 2.0;
         if (middle.x >= 0.0 && middle.x <= WIN_WIDTH as f32) &&
-            (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32)
-        {
+           (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32) {
             set_pixel(middle.x as usize, middle.y as usize, color, pixels);
 
             draw_line(p1, middle, color, pixels);
@@ -67,6 +62,7 @@ fn draw_line(p1: Vector2<f32>,
     }
 }
 
+/*
 fn draw_point(p: Vector2<f32>,
               color: u32,
               pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
@@ -82,6 +78,7 @@ fn draw_point(p: Vector2<f32>,
         }
     }
 }
+*/
 
 fn to_ndc_space(v: Vector2<f32>) -> Vector2<f32> {
     let ret = Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
@@ -107,40 +104,40 @@ fn translate_mesh(mesh: &mut Mesh, translation: Vector3<f32>) {
 }
 
 
-fn rotate_mesh(mesh: &mut Mesh, angle_x: f32, angle_y: f32, angle_z: f32) {
-    mesh.angle_x = mesh.angle_x + angle_x;
-    mesh.angle_y = mesh.angle_y + angle_y;
-    mesh.angle_z = mesh.angle_z + angle_z;
+fn rotate_mesh(mesh: &mut Mesh, angle: Vector3<f32>) {
+    mesh.angle.x = mesh.angle.x + angle.x;
+    mesh.angle.y = mesh.angle.y + angle.y;
+    mesh.angle.z = mesh.angle.z + angle.z;
 }
 
 fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
-        let v_xformed = m * v;
+    let v_xformed = m * v;
 
-        /* Perspective division, far away points moved closer to origin */
-        /* To screen space. All visible points between [-1, 1]. */
-        let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
+    /* Perspective division, far away points moved closer to origin */
+    /* To screen space. All visible points between [-1, 1]. */
+    let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
 
-        /* To Normalized Device Coordinates. All visible points between [0, 1] */
-        let n = to_ndc_space(scr);
+    /* To Normalized Device Coordinates. All visible points between [0, 1] */
+    let n = to_ndc_space(scr);
 
-        /* To actual screen pixel coordinates */
-        return to_raster_space(n);
+    /* To actual screen pixel coordinates */
+    return to_raster_space(n);
 }
 
 fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     let m_rot_x =
         Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                             RowVector4::new(0.0, mesh.angle_x.cos(), mesh.angle_x.sin(), 0.0),
-                             RowVector4::new(0.0, -mesh.angle_x.sin(), mesh.angle_x.cos(), 0.0),
+                             RowVector4::new(0.0, mesh.angle.x.cos(), mesh.angle.x.sin(), 0.0),
+                             RowVector4::new(0.0, -mesh.angle.x.sin(), mesh.angle.x.cos(), 0.0),
                              RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
     let m_rot_y =
-        Matrix4::from_rows(&[RowVector4::new(mesh.angle_y.cos(), 0.0, -mesh.angle_y.sin(), 0.0),
+        Matrix4::from_rows(&[RowVector4::new(mesh.angle.y.cos(), 0.0, -mesh.angle.y.sin(), 0.0),
                              RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                             RowVector4::new(mesh.angle_y.sin(), 0.0, mesh.angle_y.cos(), 0.0),
+                             RowVector4::new(mesh.angle.y.sin(), 0.0, mesh.angle.y.cos(), 0.0),
                              RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
     let m_rot_z =
-        Matrix4::from_rows(&[RowVector4::new(mesh.angle_z.cos(), -mesh.angle_z.sin(), 0.0, 0.0),
-                             RowVector4::new(mesh.angle_z.sin(), mesh.angle_z.cos(), 0.0, 0.0),
+        Matrix4::from_rows(&[RowVector4::new(mesh.angle.z.cos(), -mesh.angle.z.sin(), 0.0, 0.0),
+                             RowVector4::new(mesh.angle.z.sin(), mesh.angle.z.cos(), 0.0, 0.0),
                              RowVector4::new(0.0, 0.0, 1.0, 0.0),
                              RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
@@ -149,16 +146,16 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
                                        RowVector4::new(0.0, 0.0, 1.0, mesh.position.z),
                                        RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
-    let model = m_trans * /*m_rot_z */ m_rot_y /* m_rot_x*/;
+    let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
     let view: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
     let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33); // TODO(amiko)
     //let projection: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
 
     //for v in mesh.vertices.iter() {
-    for i in 0..mesh.vertices.len()-1 {
+    for i in 0..mesh.vertices.len() - 1 {
         let xform = projection * view * model;
         let v1 = mesh.vertices[i];
-        let v2 = mesh.vertices[i+1];
+        let v2 = mesh.vertices[i + 1];
         let p1 = project_vertex(v1, xform);
         let p2 = project_vertex(v2, xform);
         println!("{}", p1);
@@ -169,7 +166,7 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
         draw_point(p2, 0xFFFFFFFF, pixels);
         */
 
-/*
+        /*
         let m = model * v;
         let vi = view * m;
         let p = projection * vi;
@@ -268,7 +265,7 @@ fn main() {
             }
         }
 
-        rotate_mesh(&mut cube, 0.00, 0.01, 0.01);
+        rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         render_mesh(&cube, &mut display_buffer);
         /*
         let p2 = Vector2::new(100.0, 200.0);
