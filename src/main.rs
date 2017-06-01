@@ -56,10 +56,14 @@ fn draw_line(p1: Vector2<f32>,
 
     if dist > threshold {
         let middle = p1 + sub / 2.0;
-        set_pixel(middle.x as usize, middle.y as usize, color, pixels);
+        if (middle.x >= 0.0 && middle.x <= WIN_WIDTH as f32) &&
+            (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32)
+        {
+            set_pixel(middle.x as usize, middle.y as usize, color, pixels);
 
-        draw_line(p1, middle, color, pixels);
-        draw_line(middle, p2, color, pixels);
+            draw_line(p1, middle, color, pixels);
+            draw_line(middle, p2, color, pixels);
+        }
     }
 }
 
@@ -109,6 +113,20 @@ fn rotate_mesh(mesh: &mut Mesh, angle_x: f32, angle_y: f32, angle_z: f32) {
     mesh.angle_z = mesh.angle_z + angle_z;
 }
 
+fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
+        let v_xformed = m * v;
+
+        /* Perspective division, far away points moved closer to origin */
+        /* To screen space. All visible points between [-1, 1]. */
+        let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
+
+        /* To Normalized Device Coordinates. All visible points between [0, 1] */
+        let n = to_ndc_space(scr);
+
+        /* To actual screen pixel coordinates */
+        return to_raster_space(n);
+}
+
 fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     let m_rot_x =
         Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
@@ -136,23 +154,22 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
     let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33); // TODO(amiko)
     //let projection: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
 
-    for v in mesh.vertices.iter() {
-        println!("-----------------------------------------------------");
-        /* Transformation from model space -> view space -> projection space */
-        let v_xformed = projection * view * model * v;
+    //for v in mesh.vertices.iter() {
+    for i in 0..mesh.vertices.len()-1 {
+        let xform = projection * view * model;
+        let v1 = mesh.vertices[i];
+        let v2 = mesh.vertices[i+1];
+        let p1 = project_vertex(v1, xform);
+        let p2 = project_vertex(v2, xform);
+        println!("{}", p1);
+        println!("{}", p2);
+        draw_line(p1, p2, 0xFFFFFFFF, pixels);
+        /*
+        draw_point(p1, 0xFFFFFFFF, pixels);
+        draw_point(p2, 0xFFFFFFFF, pixels);
+        */
 
-        /* Perspective division, far away points moved closer to origin */
-        /* To screen space. All visible points between [-1, 1]. */
-        let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
-
-        /* To Normalized Device Coordinates. All visible points between [0, 1] */
-        let n = to_ndc_space(scr);
-
-        /* To actual screen pixel coordinates */
-        let r = to_raster_space(n);
-
-        draw_point(r, 0xFFFFFFFF, pixels);
-
+/*
         let m = model * v;
         let vi = view * m;
         let p = projection * vi;
@@ -170,6 +187,7 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
         println!("{}", n);
         println!("RASTER SPACE");
         println!("{}", r);
+        */
     }
 }
 
