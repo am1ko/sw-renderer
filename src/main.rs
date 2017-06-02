@@ -13,6 +13,8 @@ const FPS: f32 = 60.0;
 
 pub struct Mesh {
     vertices: Vec<Vector4<f32>>,
+    poly_sizes: Vec<i32>,
+    poly_indices: Vec<[i32; 3]>,
     position: Vector4<f32>,
     angle: Vector3<f32>,
 }
@@ -20,10 +22,12 @@ pub struct Mesh {
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
-                   vertices: Vec::new(),
-                   position: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                   angle: Vector3::new(0.0, 0.0, 0.0),
-               };
+            vertices: Vec::new(),
+            poly_sizes: Vec::new(),
+            poly_indices: Vec::new(),
+            position: Vector4::new(0.0, 0.0, 0.0, 1.0),
+            angle: Vector3::new(0.0, 0.0, 0.0),
+        };
     }
 }
 
@@ -62,31 +66,29 @@ fn draw_line(p1: Vector2<f32>,
     }
 }
 
-/*
-fn draw_point(p: Vector2<f32>,
-              color: u32,
-              pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-
-    for i in -1..2 {
-        for j in -1..2 {
-            let px = p.x + ((i as i32) as f32);
-            let py = p.y + ((j as i32) as f32);
-
-            if px > 0.0 && py > 0.0 {
-                set_pixel(px as usize, py as usize, color, pixels);
-            }
-        }
-    }
-}
-*/
+// fn draw_point(p: Vector2<f32>,
+// color: u32,
+// pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+//
+// for i in -1..2 {
+// for j in -1..2 {
+// let px = p.x + ((i as i32) as f32);
+// let py = p.y + ((j as i32) as f32);
+//
+// if px > 0.0 && py > 0.0 {
+// set_pixel(px as usize, py as usize, color, pixels);
+// }
+// }
+// }
+// }
+//
 
 fn to_ndc_space(v: Vector2<f32>) -> Vector2<f32> {
     let ret = Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
 
-    /*
-    assert!(ret.x >= 0.0 && ret.x <= 1.0);
-    assert!(ret.y >= 0.0 && ret.y <= 1.0);
-    */
+    // assert!(ret.x >= 0.0 && ret.x <= 1.0);
+    // assert!(ret.y >= 0.0 && ret.y <= 1.0);
+    //
 
     return ret;
 }
@@ -113,14 +115,14 @@ fn rotate_mesh(mesh: &mut Mesh, angle: Vector3<f32>) {
 fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     let v_xformed = m * v;
 
-    /* Perspective division, far away points moved closer to origin */
-    /* To screen space. All visible points between [-1, 1]. */
+    // Perspective division, far away points moved closer to origin
+    // To screen space. All visible points between [-1, 1].
     let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
 
-    /* To Normalized Device Coordinates. All visible points between [0, 1] */
+    // To Normalized Device Coordinates. All visible points between [0, 1]
     let n = to_ndc_space(scr);
 
-    /* To actual screen pixel coordinates */
+    // To actual screen pixel coordinates
     return to_raster_space(n);
 }
 
@@ -148,44 +150,37 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
 
     let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
     let view: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
-    let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33); // TODO(amiko)
-    //let projection: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
+    let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33);
+    let xform = projection * view * model;
 
-    //for v in mesh.vertices.iter() {
-    for i in 0..mesh.vertices.len() - 1 {
-        let xform = projection * view * model;
-        let v1 = mesh.vertices[i];
-        let v2 = mesh.vertices[i + 1];
-        let p1 = project_vertex(v1, xform);
-        let p2 = project_vertex(v2, xform);
-        println!("{}", p1);
-        println!("{}", p2);
+    for p in mesh.poly_indices.iter() {
+        let p1 = project_vertex(mesh.vertices[p[0] as usize], xform);
+        let p2 = project_vertex(mesh.vertices[p[1] as usize], xform);
+        let p3 = project_vertex(mesh.vertices[p[2] as usize], xform);
+
         draw_line(p1, p2, 0xFFFFFFFF, pixels);
-        /*
-        draw_point(p1, 0xFFFFFFFF, pixels);
-        draw_point(p2, 0xFFFFFFFF, pixels);
-        */
-
-        /*
-        let m = model * v;
-        let vi = view * m;
-        let p = projection * vi;
-        println!("MODEL SPACE");
-        println!("{}", v);
-        println!("WORLD SPACE");
-        println!("{}", m);
-        println!("VIEW SPACE");
-        println!("{}", vi);
-        println!("PROJECTION SPACE");
-        println!("{}", p);
-        println!("SCREEN SPACE");
-        println!("{}", scr);
-        println!("NDC SPACE");
-        println!("{}", n);
-        println!("RASTER SPACE");
-        println!("{}", r);
-        */
+        draw_line(p2, p3, 0xFFFFFFFF, pixels);
+        draw_line(p3, p1, 0xFFFFFFFF, pixels);
     }
+
+    // let m = model * v;
+    // let vi = view * m;
+    // let p = projection * vi;
+    // println!("MODEL SPACE");
+    // println!("{}", v);
+    // println!("WORLD SPACE");
+    // println!("{}", m);
+    // println!("VIEW SPACE");
+    // println!("{}", vi);
+    // println!("PROJECTION SPACE");
+    // println!("{}", p);
+    // println!("SCREEN SPACE");
+    // println!("{}", scr);
+    // println!("NDC SPACE");
+    // println!("{}", n);
+    // println!("RASTER SPACE");
+    // println!("{}", r);
+    //
 }
 
 fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
@@ -219,15 +214,19 @@ fn main() {
 
     let mut cube = Mesh::new();
     cube.vertices
-        .append(&mut vec![Vector4::new(1.0, -1.0, -1.0, 1.0),
-                          Vector4::new(1.0, -1.0, 1.0, 1.0),
-                          Vector4::new(1.0, 1.0, -1.0, 1.0),
+        .append(&mut vec![Vector4::new(-1.0, 1.0, 1.0, 1.0),
                           Vector4::new(1.0, 1.0, 1.0, 1.0),
-                          Vector4::new(-1.0, -1.0, -1.0, 1.0),
                           Vector4::new(-1.0, -1.0, 1.0, 1.0),
+                          Vector4::new(1.0, -1.0, 1.0, 1.0),
                           Vector4::new(-1.0, 1.0, -1.0, 1.0),
-                          Vector4::new(-1.0, 1.0, 1.0, 1.0)]);
+                          Vector4::new(1.0, 1.0, -1.0, 1.0),
+                          Vector4::new(1.0, -1.0, -1.0, 1.0),
+                          Vector4::new(-1.0, -1.0, -1.0, 1.0)]);
 
+    cube.poly_sizes.append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
+    cube.poly_indices
+        .append(&mut vec![[0, 1, 2], [1, 2, 3], [1, 3, 6], [1, 5, 6], [0, 1, 4], [1, 4, 5],
+                          [2, 3, 7], [3, 6, 7], [0, 2, 7], [0, 4, 7], [4, 5, 6], [4, 6, 7]]);
 
     translate_mesh(&mut cube, Vector3::new(0.0, 0.0, -3.0));
 
@@ -267,11 +266,6 @@ fn main() {
 
         rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         render_mesh(&cube, &mut display_buffer);
-        /*
-        let p2 = Vector2::new(100.0, 200.0);
-        let p1 = Vector2::new(700.0, 500.0);
-        draw_line(p1, p2, 0xFFFFFFFF, &mut display_buffer);
-        */
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
