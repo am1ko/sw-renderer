@@ -4,7 +4,7 @@ extern crate nalgebra as na;
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::window::{Event, Key, style, VideoMode};
 use sfml::system::Clock;
-use na::{Vector2, Vector3, Vector4, Matrix4, RowVector4};
+use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 
 const WIN_WIDTH: usize = 800;
 const WIN_HEIGHT: usize = 600;
@@ -22,12 +22,12 @@ pub struct Mesh {
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
-            vertices: Vec::new(),
-            poly_sizes: Vec::new(),
-            poly_indices: Vec::new(),
-            position: Vector4::new(0.0, 0.0, 0.0, 1.0),
-            angle: Vector3::new(0.0, 0.0, 0.0),
-        };
+                   vertices: Vec::new(),
+                   poly_sizes: Vec::new(),
+                   poly_indices: Vec::new(),
+                   position: Vector4::new(0.0, 0.0, 0.0, 1.0),
+                   angle: Vector3::new(0.0, 0.0, 0.0),
+               };
     }
 }
 
@@ -35,7 +35,7 @@ fn set_pixel(x: usize,
              y: usize,
              color: u32,
              pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-    let index = y * WIN_WIDTH * BYTES_PER_PIXEL + x * BYTES_PER_PIXEL;
+    let index = (WIN_HEIGHT - y) * WIN_WIDTH * BYTES_PER_PIXEL + x * BYTES_PER_PIXEL;
     if index > 0 && index < (pixels.len() - BYTES_PER_PIXEL) {
         pixels[index] = ((color & 0x000000FF) >> 0) as u8;
         pixels[index + 1] = ((color & 0x0000FF00) >> 8) as u8;
@@ -81,14 +81,10 @@ fn draw_line(p1: Vector2<f32>,
 // }
 // }
 // }
-//
+
 
 fn to_ndc_space(v: Vector2<f32>) -> Vector2<f32> {
     let ret = Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
-
-    // assert!(ret.x >= 0.0 && ret.x <= 1.0);
-    // assert!(ret.y >= 0.0 && ret.y <= 1.0);
-    //
 
     return ret;
 }
@@ -126,7 +122,9 @@ fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     return to_raster_space(n);
 }
 
-fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+fn render_mesh(mesh: &Mesh,
+               eye: Vector4<f32>,
+               pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     let m_rot_x =
         Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
                              RowVector4::new(0.0, mesh.angle.x.cos(), mesh.angle.x.sin(), 0.0),
@@ -149,7 +147,7 @@ fn render_mesh(mesh: &Mesh, pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER
                                        RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
     let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
-    let view: Matrix4<f32> = Matrix4::identity(); // TODO(amiko)
+    let view: Matrix4<f32> = look_at(eye, mesh.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
     let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33);
     let xform = projection * view * model;
 
@@ -201,10 +199,40 @@ fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32)
 
 }
 
+fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
+    // Rotate so that the line of sight from the eye position to the target maps to the z axis.
+    // Camera up direction maps to y axis. x- axis is defined from the other two by cross product
+
+    let reduce_dim = Matrix3x4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
+                                            RowVector4::new(0.0, 1.0, 0.0, 0.0),
+                                            RowVector4::new(0.0, 0.0, 1.0, 0.0)]);
+    let eye = reduce_dim * eye;
+    let lookat = reduce_dim * lookat;
+    let up = reduce_dim * up;
+
+    let z = (lookat - eye).normalize();
+    let x = (up.cross(&z)).normalize();
+    let y = (z.cross(&x)).normalize();
+
+    //let rotation = Matrix4::from_columns(&[x, y, z, Vector4::new(0.0, 0.0, 0.0, 1.0)]);
+
+    let rotation = Matrix4::from_rows(&[RowVector4::new(x.x, x.y, x.z, 0.0),
+                                        RowVector4::new(y.x, y.y, y.z, 0.0),
+                                        RowVector4::new(z.x, z.y, z.z, 0.0),
+                                        RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+
+    // Translate to the inverse of the eye position (the world rotates in the opposite direction
+    // around the camera that is fixed)
+    let translation = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, -eye.x),
+                                           RowVector4::new(0.0, 1.0, 0.0, -eye.y),
+                                           RowVector4::new(0.0, 0.0, 1.0, -eye.z),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+    return rotation * translation;
+}
+
 fn main() {
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    // let mut window = RenderWindow::new((WIN_WIDTH as u32, WIN_HEIGHT as u32),
     let w = RenderWindow::new(vm, "GFX demo", style::CLOSE, &Default::default());
 
     let mut window = w.unwrap();
@@ -223,13 +251,15 @@ fn main() {
                           Vector4::new(1.0, -1.0, -1.0, 1.0),
                           Vector4::new(-1.0, -1.0, -1.0, 1.0)]);
 
-    cube.poly_sizes.append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
+    cube.poly_sizes
+        .append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
     cube.poly_indices
         .append(&mut vec![[0, 1, 2], [1, 2, 3], [1, 3, 6], [1, 5, 6], [0, 1, 4], [1, 4, 5],
                           [2, 3, 7], [3, 6, 7], [0, 2, 7], [0, 4, 7], [4, 5, 6], [4, 6, 7]]);
 
     translate_mesh(&mut cube, Vector3::new(0.0, 0.0, -3.0));
 
+    let mut eye_pos = Vector4::new(0.0, 0.0, 0.0, 1.0);
     loop {
         let mut sprite = Sprite::new();
         let mut display_buffer: [u8; WIN_HEIGHT * WIN_WIDTH * BYTES_PER_PIXEL] =
@@ -242,22 +272,22 @@ fn main() {
                 Event::KeyPressed { code: Key::D, .. } |
                 Event::KeyPressed { code: Key::Right, .. } |
                 Event::KeyPressed { code: Key::L, .. } => {
-                    translate_mesh(&mut cube, Vector3::new(0.1, 0.0, 0.0));
+                    eye_pos.x = eye_pos.x + 0.1;
                 }
                 Event::KeyPressed { code: Key::A, .. } |
                 Event::KeyPressed { code: Key::Left, .. } |
                 Event::KeyPressed { code: Key::H, .. } => {
-                    translate_mesh(&mut cube, Vector3::new(-0.1, 0.0, 0.0));
+                    eye_pos.x = eye_pos.x - 0.1;
                 }
                 Event::KeyPressed { code: Key::W, .. } |
                 Event::KeyPressed { code: Key::Up, .. } |
                 Event::KeyPressed { code: Key::K, .. } => {
-                    translate_mesh(&mut cube, Vector3::new(0.0, 0.0, 0.1));
+                    eye_pos.z = eye_pos.z + 0.1;
                 }
                 Event::KeyPressed { code: Key::S, .. } |
                 Event::KeyPressed { code: Key::Down, .. } |
                 Event::KeyPressed { code: Key::J, .. } => {
-                    translate_mesh(&mut cube, Vector3::new(0.0, 0.0, -0.1));
+                    eye_pos.z = eye_pos.z - 0.1;
                 }
                 Event::KeyPressed { code: Key::R, .. } => {}
                 _ => {}
@@ -265,7 +295,7 @@ fn main() {
         }
 
         rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
-        render_mesh(&cube, &mut display_buffer);
+        render_mesh(&cube, eye_pos, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
