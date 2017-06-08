@@ -6,8 +6,8 @@ use sfml::window::{Event, Key, style, VideoMode};
 use sfml::system::Clock;
 use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 
-const WIN_WIDTH: usize = 800;
-const WIN_HEIGHT: usize = 600;
+const WIN_WIDTH: usize = 1024;
+const WIN_HEIGHT: usize = 768;
 const BYTES_PER_PIXEL: usize = 4;
 const FPS: f32 = 60.0;
 
@@ -102,11 +102,11 @@ fn translate_mesh(mesh: &mut Mesh, translation: Vector3<f32>) {
 }
 
 
-fn rotate_mesh(mesh: &mut Mesh, angle: Vector3<f32>) {
-    mesh.angle.x = mesh.angle.x + angle.x;
-    mesh.angle.y = mesh.angle.y + angle.y;
-    mesh.angle.z = mesh.angle.z + angle.z;
-}
+//fn rotate_mesh(mesh: &mut Mesh, angle: Vector3<f32>) {
+//    mesh.angle.x = mesh.angle.x + angle.x;
+//    mesh.angle.y = mesh.angle.y + angle.y;
+//    mesh.angle.z = mesh.angle.z + angle.z;
+//}
 
 fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     let v_xformed = m * v;
@@ -148,7 +148,8 @@ fn render_mesh(mesh: &Mesh,
 
     let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
     let view: Matrix4<f32> = look_at(eye, mesh.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
-    let projection: Matrix4<f32> = perspective_projection(0.1, 5.0, 78.0, 1.33);
+    let projection: Matrix4<f32> =
+        perspective_projection(0.1, 5.0, 78.0, ((WIN_WIDTH as f32) / (WIN_HEIGHT as f32)));
     let xform = projection * view * model;
 
     for p in mesh.poly_indices.iter() {
@@ -260,6 +261,7 @@ fn main() {
     translate_mesh(&mut cube, Vector3::new(0.0, 0.0, -3.0));
 
     let mut eye_pos = Vector4::new(0.0, 0.0, 0.0, 1.0);
+    let mut vel = Vector3::new(0.0, 0.0, 0.0);
     loop {
         let mut sprite = Sprite::new();
         let mut display_buffer: [u8; WIN_HEIGHT * WIN_WIDTH * BYTES_PER_PIXEL] =
@@ -272,29 +274,55 @@ fn main() {
                 Event::KeyPressed { code: Key::D, .. } |
                 Event::KeyPressed { code: Key::Right, .. } |
                 Event::KeyPressed { code: Key::L, .. } => {
-                    eye_pos.x = eye_pos.x + 0.1;
+                    vel.x = 1.0;
+                }
+                Event::KeyReleased { code: Key::D, .. } |
+                Event::KeyReleased { code: Key::Right, .. } |
+                Event::KeyReleased { code: Key::L, .. } => {
+                    vel.x = 0.0;
                 }
                 Event::KeyPressed { code: Key::A, .. } |
                 Event::KeyPressed { code: Key::Left, .. } |
                 Event::KeyPressed { code: Key::H, .. } => {
-                    eye_pos.x = eye_pos.x - 0.1;
+                    vel.x = -1.0;
                 }
+
+                Event::KeyReleased { code: Key::A, .. } |
+                Event::KeyReleased { code: Key::Left, .. } |
+                Event::KeyReleased { code: Key::H, .. } => {
+                    vel.x = 0.0;
+                }
+
                 Event::KeyPressed { code: Key::W, .. } |
                 Event::KeyPressed { code: Key::Up, .. } |
                 Event::KeyPressed { code: Key::K, .. } => {
-                    eye_pos.z = eye_pos.z + 0.1;
+                    vel.z = -1.0;
+                }
+                Event::KeyReleased { code: Key::W, .. } |
+                Event::KeyReleased { code: Key::Up, .. } |
+                Event::KeyReleased { code: Key::K, .. } => {
+                    vel.z = 0.0;
                 }
                 Event::KeyPressed { code: Key::S, .. } |
                 Event::KeyPressed { code: Key::Down, .. } |
                 Event::KeyPressed { code: Key::J, .. } => {
-                    eye_pos.z = eye_pos.z - 0.1;
+                    vel.z = 1.0;
+                }
+                Event::KeyReleased { code: Key::S, .. } |
+                Event::KeyReleased { code: Key::Down, .. } |
+                Event::KeyReleased { code: Key::J, .. } => {
+                    vel.z = 0.0;
                 }
                 Event::KeyPressed { code: Key::R, .. } => {}
                 _ => {}
             }
         }
 
-        rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
+        eye_pos.x = eye_pos.x + vel.x * (1.0 / FPS);
+        eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
+        eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
+
+        //rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         render_mesh(&cube, eye_pos, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
