@@ -29,6 +29,78 @@ impl Mesh {
                    angle: Vector3::new(0.0, 0.0, 0.0),
                };
     }
+
+    pub fn render(self: &Mesh,
+                  eye: Vector4<f32>,
+                  pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+        let m_rot_x = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
+                                           RowVector4::new(0.0,
+                                                           self.angle.x.cos(),
+                                                           self.angle.x.sin(),
+                                                           0.0),
+                                           RowVector4::new(0.0,
+                                                           -self.angle.x.sin(),
+                                                           self.angle.x.cos(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+        let m_rot_y = Matrix4::from_rows(&[RowVector4::new(self.angle.y.cos(),
+                                                           0.0,
+                                                           -self.angle.y.sin(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 1.0, 0.0, 0.0),
+                                           RowVector4::new(self.angle.y.sin(),
+                                                           0.0,
+                                                           self.angle.y.cos(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+        let m_rot_z = Matrix4::from_rows(&[RowVector4::new(self.angle.z.cos(),
+                                                           -self.angle.z.sin(),
+                                                           0.0,
+                                                           0.0),
+                                           RowVector4::new(self.angle.z.sin(),
+                                                           self.angle.z.cos(),
+                                                           0.0,
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 1.0, 0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+
+        let m_trans = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, self.position.x),
+                                           RowVector4::new(0.0, 1.0, 0.0, self.position.y),
+                                           RowVector4::new(0.0, 0.0, 1.0, self.position.z),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+
+        let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
+        let view: Matrix4<f32> = look_at(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
+        let projection: Matrix4<f32> =
+            perspective_projection(0.1, 5.0, 78.0, ((WIN_WIDTH as f32) / (WIN_HEIGHT as f32)));
+        let xform = projection * view * model;
+
+        for p in self.poly_indices.iter() {
+            let p1 = project_vertex(self.vertices[p[0] as usize], xform);
+            let p2 = project_vertex(self.vertices[p[1] as usize], xform);
+            let p3 = project_vertex(self.vertices[p[2] as usize], xform);
+
+            draw_line(p1, p2, 0xFFFFFFFF, pixels);
+            draw_line(p2, p3, 0xFFFFFFFF, pixels);
+            draw_line(p3, p1, 0xFFFFFFFF, pixels);
+        }
+    }
+
+    pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
+        let xform = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, translation.x),
+                                         RowVector4::new(0.0, 1.0, 0.0, translation.y),
+                                         RowVector4::new(0.0, 0.0, 1.0, translation.z),
+                                         RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+        self.position = xform * self.position;
+    }
+
+    /*
+    fn rotate(this: &mut Mesh, angle: Vector3<f32>) {
+        this.angle.x = this.angle.x + angle.x;
+        this.angle.y = this.angle.y + angle.y;
+        this.angle.z = this.angle.z + angle.z;
+    }
+    */
 }
 
 fn set_pixel(x: usize,
@@ -93,20 +165,8 @@ fn to_raster_space(v: Vector2<f32>) -> Vector2<f32> {
     return Vector2::new(v.x * WIN_WIDTH as f32, v.y * WIN_HEIGHT as f32);
 }
 
-fn translate_mesh(mesh: &mut Mesh, translation: Vector3<f32>) {
-    let xform = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, translation.x),
-                                     RowVector4::new(0.0, 1.0, 0.0, translation.y),
-                                     RowVector4::new(0.0, 0.0, 1.0, translation.z),
-                                     RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
-    mesh.position = xform * mesh.position;
-}
 
 
-//fn rotate_mesh(mesh: &mut Mesh, angle: Vector3<f32>) {
-//    mesh.angle.x = mesh.angle.x + angle.x;
-//    mesh.angle.y = mesh.angle.y + angle.y;
-//    mesh.angle.z = mesh.angle.z + angle.z;
-//}
 
 fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     let v_xformed = m * v;
@@ -120,66 +180,6 @@ fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
 
     // To actual screen pixel coordinates
     return to_raster_space(n);
-}
-
-fn render_mesh(mesh: &Mesh,
-               eye: Vector4<f32>,
-               pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-    let m_rot_x =
-        Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                             RowVector4::new(0.0, mesh.angle.x.cos(), mesh.angle.x.sin(), 0.0),
-                             RowVector4::new(0.0, -mesh.angle.x.sin(), mesh.angle.x.cos(), 0.0),
-                             RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
-    let m_rot_y =
-        Matrix4::from_rows(&[RowVector4::new(mesh.angle.y.cos(), 0.0, -mesh.angle.y.sin(), 0.0),
-                             RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                             RowVector4::new(mesh.angle.y.sin(), 0.0, mesh.angle.y.cos(), 0.0),
-                             RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
-    let m_rot_z =
-        Matrix4::from_rows(&[RowVector4::new(mesh.angle.z.cos(), -mesh.angle.z.sin(), 0.0, 0.0),
-                             RowVector4::new(mesh.angle.z.sin(), mesh.angle.z.cos(), 0.0, 0.0),
-                             RowVector4::new(0.0, 0.0, 1.0, 0.0),
-                             RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
-
-    let m_trans = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, mesh.position.x),
-                                       RowVector4::new(0.0, 1.0, 0.0, mesh.position.y),
-                                       RowVector4::new(0.0, 0.0, 1.0, mesh.position.z),
-                                       RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
-
-    let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
-    let view: Matrix4<f32> = look_at(eye, mesh.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
-    let projection: Matrix4<f32> =
-        perspective_projection(0.1, 5.0, 78.0, ((WIN_WIDTH as f32) / (WIN_HEIGHT as f32)));
-    let xform = projection * view * model;
-
-    for p in mesh.poly_indices.iter() {
-        let p1 = project_vertex(mesh.vertices[p[0] as usize], xform);
-        let p2 = project_vertex(mesh.vertices[p[1] as usize], xform);
-        let p3 = project_vertex(mesh.vertices[p[2] as usize], xform);
-
-        draw_line(p1, p2, 0xFFFFFFFF, pixels);
-        draw_line(p2, p3, 0xFFFFFFFF, pixels);
-        draw_line(p3, p1, 0xFFFFFFFF, pixels);
-    }
-
-    // let m = model * v;
-    // let vi = view * m;
-    // let p = projection * vi;
-    // println!("MODEL SPACE");
-    // println!("{}", v);
-    // println!("WORLD SPACE");
-    // println!("{}", m);
-    // println!("VIEW SPACE");
-    // println!("{}", vi);
-    // println!("PROJECTION SPACE");
-    // println!("{}", p);
-    // println!("SCREEN SPACE");
-    // println!("{}", scr);
-    // println!("NDC SPACE");
-    // println!("{}", n);
-    // println!("RASTER SPACE");
-    // println!("{}", r);
-    //
 }
 
 fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
@@ -266,7 +266,7 @@ fn main() {
         .append(&mut vec![[0, 1, 2], [1, 2, 3], [1, 3, 6], [1, 5, 6], [0, 1, 4], [1, 4, 5],
                           [2, 3, 7], [3, 6, 7], [0, 2, 7], [0, 4, 7], [4, 5, 6], [4, 6, 7]]);
 
-    translate_mesh(&mut cube, Vector3::new(0.0, 0.0, -3.0));
+    cube.translate(Vector3::new(0.0, 0.0, -3.0));
 
     let mut eye_pos = Vector4::new(0.0, 0.0, 0.0, 1.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
@@ -331,7 +331,7 @@ fn main() {
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
         //rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
-        render_mesh(&cube, eye_pos, &mut display_buffer);
+        cube.render(eye_pos, &mut display_buffer);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
