@@ -204,6 +204,8 @@ fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4
     // Rotate so that the line of sight from the eye position to the target maps to the z axis.
     // Camera up direction maps to y axis. x- axis is defined from the other two by cross product
 
+    // We do not care about the w-component. Lets get rid of it since cross product is not defined
+    // for 4D vectors
     let reduce_dim = Matrix3x4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
                                             RowVector4::new(0.0, 1.0, 0.0, 0.0),
                                             RowVector4::new(0.0, 0.0, 1.0, 0.0)]);
@@ -211,23 +213,29 @@ fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4
     let lookat = reduce_dim * lookat;
     let up = reduce_dim * up;
 
+    // Unit vectors in camera space
     let z = (lookat - eye).normalize();
     let x = (up.cross(&z)).normalize();
     let y = (z.cross(&x)).normalize();
 
-    //let rotation = Matrix4::from_columns(&[x, y, z, Vector4::new(0.0, 0.0, 0.0, 1.0)]);
+    // The view matrix is the inverse of a model matrix that would transform a model of the camera
+    // into world space (transformation and rotation)
 
+    // This is an orientation matrix that is transposed. Transpose effectively performs inversion.
+    // This achieves the effect that the world rotates around the camera
     let rotation = Matrix4::from_rows(&[RowVector4::new(x.x, x.y, x.z, 0.0),
                                         RowVector4::new(y.x, y.y, y.z, 0.0),
                                         RowVector4::new(z.x, z.y, z.z, 0.0),
                                         RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
-    // Translate to the inverse of the eye position (the world rotates in the opposite direction
+    // Translate to the inverse of the eye position (the world moves in the opposite direction
     // around the camera that is fixed)
     let translation = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, -eye.x),
                                            RowVector4::new(0.0, 1.0, 0.0, -eye.y),
                                            RowVector4::new(0.0, 0.0, 1.0, -eye.z),
                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+
+    // Use inverse multiplication order to produce inversed combined matrix
     return rotation * translation;
 }
 
