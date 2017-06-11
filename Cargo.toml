@@ -6,3 +6,11 @@ authors = ["Mikko Ala-Louko <mikko.alalouko@gmail.com>"]
 [dependencies]
 sfml = "*"
 nalgebra = '*'
+
+[lib]
+name = "renderer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gfx_test_app"
+path = "src/main.rs"

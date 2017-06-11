@@ -1,26 +1,26 @@
 extern crate sfml;
 extern crate nalgebra as na;
+extern crate renderer;
 
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::window::{Event, Key, style, VideoMode};
 use sfml::system::Clock;
 use na::{Vector3, Vector4};
-
-pub mod gfx;
+use renderer::*;
 
 const FPS: f32 = 60.0;
 
 fn main() {
     let mut clock = Clock::start();
-    let vm = VideoMode::new(gfx::WIN_WIDTH as u32, gfx::WIN_HEIGHT as u32, 32);
+    let vm = VideoMode::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32, 32);
     let w = RenderWindow::new(vm, "GFX demo", style::CLOSE, &Default::default());
 
     let mut window = w.unwrap();
     window.set_vertical_sync_enabled(true);
 
-    let mut texture = Texture::new(gfx::WIN_WIDTH as u32, gfx::WIN_HEIGHT as u32).unwrap();
+    let mut texture = Texture::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32).unwrap();
 
-    let mut cube = gfx::Mesh::new();
+    let mut cube = core::Mesh::new();
     cube.vertices
         .append(&mut vec![Vector4::new(-1.0, 1.0, 1.0, 1.0),
                           Vector4::new(1.0, 1.0, 1.0, 1.0),
@@ -44,8 +44,9 @@ fn main() {
     loop {
         let mut sprite = Sprite::new();
         let mut display_buffer: [u8;
-                                 gfx::WIN_HEIGHT * gfx::WIN_WIDTH * gfx::BYTES_PER_PIXEL] =
-            [0; gfx::WIN_HEIGHT * gfx::WIN_WIDTH * gfx::BYTES_PER_PIXEL];
+                                 core::WIN_HEIGHT * core::WIN_WIDTH *
+                                 core::BYTES_PER_PIXEL] =
+            [0; core::WIN_HEIGHT * core::WIN_WIDTH * core::BYTES_PER_PIXEL];
         for event in window.events() {
             match event {
                 Event::Closed |
@@ -108,8 +109,8 @@ fn main() {
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
             texture.update_from_pixels(&display_buffer,
-                                       gfx::WIN_WIDTH as u32,
-                                       gfx::WIN_HEIGHT as u32,
+                                       core::WIN_WIDTH as u32,
+                                       core::WIN_HEIGHT as u32,
                                        0,
                                        0);
             sprite.set_texture(&texture, false);

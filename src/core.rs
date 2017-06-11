@@ -1,4 +1,6 @@
-use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
+extern crate nalgebra as na;
+use self::na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
+
 pub const WIN_WIDTH: usize = 1024;
 pub const WIN_HEIGHT: usize = 768;
 pub const BYTES_PER_PIXEL: usize = 4;
@@ -27,11 +29,7 @@ fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     return to_raster_space(n);
 }
 
-fn perspective_projection(n: f32,
-                            f: f32,
-                            angle_of_view: f32,
-                            aspect_ratio: f32)
-                            -> Matrix4<f32> {
+fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
     let deg_to_rad = ::std::f32::consts::PI / 180.0;
     let size = n * (deg_to_rad * angle_of_view / 2.0).tan();
     let l = -size;
@@ -39,14 +37,8 @@ fn perspective_projection(n: f32,
     let b = -size / aspect_ratio;
     let t = size / aspect_ratio;
 
-    return Matrix4::from_rows(&[RowVector4::new(2.0 * n / (r - l),
-                                                0.0,
-                                                (r + l) / (r - l),
-                                                0.0),
-                                RowVector4::new(0.0,
-                                                2.0 * n / (t - b),
-                                                (t + b) / (t - b),
-                                                0.0),
+    return Matrix4::from_rows(&[RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
+                                RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
                                 RowVector4::new(0.0,
                                                 0.0,
                                                 -(f + n) / (f - n),
@@ -87,18 +79,18 @@ fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4
     // Translate to the inverse of the eye position (the world moves in the opposite direction
     // around the camera that is fixed)
     let translation = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, -eye.x),
-                                            RowVector4::new(0.0, 1.0, 0.0, -eye.y),
-                                            RowVector4::new(0.0, 0.0, 1.0, -eye.z),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                           RowVector4::new(0.0, 1.0, 0.0, -eye.y),
+                                           RowVector4::new(0.0, 0.0, 1.0, -eye.z),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
     // Use inverse multiplication order to produce inversed combined matrix
     return rotation * translation;
 }
 
 fn set_pixel(x: usize,
-                y: usize,
-                color: u32,
-                pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+             y: usize,
+             color: u32,
+             pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
     let index = (WIN_HEIGHT - y) * WIN_WIDTH * BYTES_PER_PIXEL + x * BYTES_PER_PIXEL;
     if index > 0 && index < (pixels.len() - BYTES_PER_PIXEL) {
         pixels[index] = ((color & 0x000000FF) >> 0) as u8;
@@ -109,9 +101,9 @@ fn set_pixel(x: usize,
 }
 
 fn draw_line(p1: Vector2<f32>,
-                p2: Vector2<f32>,
-                color: u32,
-                pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+             p2: Vector2<f32>,
+             color: u32,
+             pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
 
     let threshold = 1.0;
     let sub = p2 - p1;
@@ -121,7 +113,7 @@ fn draw_line(p1: Vector2<f32>,
     if dist > threshold {
         let middle = p1 + sub / 2.0;
         if (middle.x >= 0.0 && middle.x <= WIN_WIDTH as f32) &&
-            (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32) {
+           (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32) {
             set_pixel(middle.x as usize, middle.y as usize, color, pixels);
 
             draw_line(p1, middle, color, pixels);
@@ -157,52 +149,52 @@ pub struct Mesh {
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
-                    vertices: Vec::new(),
-                    poly_sizes: Vec::new(),
-                    poly_indices: Vec::new(),
-                    position: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                    angle: Vector3::new(0.0, 0.0, 0.0),
-                };
+                   vertices: Vec::new(),
+                   poly_sizes: Vec::new(),
+                   poly_indices: Vec::new(),
+                   position: Vector4::new(0.0, 0.0, 0.0, 1.0),
+                   angle: Vector3::new(0.0, 0.0, 0.0),
+               };
     }
 
     pub fn render(self: &Mesh,
-                    eye: Vector4<f32>,
-                    pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+                  eye: Vector4<f32>,
+                  pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
         let m_rot_x = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                                            RowVector4::new(0.0,
-                                                            self.angle.x.cos(),
-                                                            self.angle.x.sin(),
-                                                            0.0),
-                                            RowVector4::new(0.0,
-                                                            -self.angle.x.sin(),
-                                                            self.angle.x.cos(),
-                                                            0.0),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                           RowVector4::new(0.0,
+                                                           self.angle.x.cos(),
+                                                           self.angle.x.sin(),
+                                                           0.0),
+                                           RowVector4::new(0.0,
+                                                           -self.angle.x.sin(),
+                                                           self.angle.x.cos(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
         let m_rot_y = Matrix4::from_rows(&[RowVector4::new(self.angle.y.cos(),
-                                                            0.0,
-                                                            -self.angle.y.sin(),
-                                                            0.0),
-                                            RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                                            RowVector4::new(self.angle.y.sin(),
-                                                            0.0,
-                                                            self.angle.y.cos(),
-                                                            0.0),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                                           0.0,
+                                                           -self.angle.y.sin(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 1.0, 0.0, 0.0),
+                                           RowVector4::new(self.angle.y.sin(),
+                                                           0.0,
+                                                           self.angle.y.cos(),
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
         let m_rot_z = Matrix4::from_rows(&[RowVector4::new(self.angle.z.cos(),
-                                                            -self.angle.z.sin(),
-                                                            0.0,
-                                                            0.0),
-                                            RowVector4::new(self.angle.z.sin(),
-                                                            self.angle.z.cos(),
-                                                            0.0,
-                                                            0.0),
-                                            RowVector4::new(0.0, 0.0, 1.0, 0.0),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                                           -self.angle.z.sin(),
+                                                           0.0,
+                                                           0.0),
+                                           RowVector4::new(self.angle.z.sin(),
+                                                           self.angle.z.cos(),
+                                                           0.0,
+                                                           0.0),
+                                           RowVector4::new(0.0, 0.0, 1.0, 0.0),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
         let m_trans = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, self.position.x),
-                                            RowVector4::new(0.0, 1.0, 0.0, self.position.y),
-                                            RowVector4::new(0.0, 0.0, 1.0, self.position.z),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                           RowVector4::new(0.0, 1.0, 0.0, self.position.y),
+                                           RowVector4::new(0.0, 0.0, 1.0, self.position.z),
+                                           RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let view: Matrix4<f32> = look_at(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
@@ -223,9 +215,9 @@ impl Mesh {
 
     pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
         let xform = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, translation.x),
-                                            RowVector4::new(0.0, 1.0, 0.0, translation.y),
-                                            RowVector4::new(0.0, 0.0, 1.0, translation.z),
-                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
+                                         RowVector4::new(0.0, 1.0, 0.0, translation.y),
+                                         RowVector4::new(0.0, 0.0, 1.0, translation.z),
+                                         RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
         self.position = xform * self.position;
     }
 
