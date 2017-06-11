@@ -41,12 +41,11 @@ fn main() {
 
     let mut eye_pos = Vector4::new(0.0, 0.0, 0.0, 1.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
+    let mut db = core::DisplayBuffer::new(core::WIN_WIDTH, core::WIN_HEIGHT, 4);
+
     loop {
         let mut sprite = Sprite::new();
-        let mut display_buffer: [u8;
-                                 core::WIN_HEIGHT * core::WIN_WIDTH *
-                                 core::BYTES_PER_PIXEL] =
-            [0; core::WIN_HEIGHT * core::WIN_WIDTH * core::BYTES_PER_PIXEL];
+
         for event in window.events() {
             match event {
                 Event::Closed |
@@ -104,15 +103,12 @@ fn main() {
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
         //rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
-        cube.render(eye_pos, &mut display_buffer);
+        db.clear();
+        cube.render(eye_pos, &mut db);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
-            texture.update_from_pixels(&display_buffer,
-                                       core::WIN_WIDTH as u32,
-                                       core::WIN_HEIGHT as u32,
-                                       0,
-                                       0);
+            texture.update_from_pixels(&db.data, db.width as u32, db.height as u32, 0, 0);
             sprite.set_texture(&texture, false);
 
             window.clear(&Color::black());

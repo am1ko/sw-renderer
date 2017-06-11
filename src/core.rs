@@ -87,37 +87,20 @@ fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4
     return rotation * translation;
 }
 
-fn set_pixel(x: usize,
-             y: usize,
-             color: u32,
-             pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-    let index = (WIN_HEIGHT - y) * WIN_WIDTH * BYTES_PER_PIXEL + x * BYTES_PER_PIXEL;
-    if index > 0 && index < (pixels.len() - BYTES_PER_PIXEL) {
-        pixels[index] = ((color & 0x000000FF) >> 0) as u8;
-        pixels[index + 1] = ((color & 0x0000FF00) >> 8) as u8;
-        pixels[index + 2] = ((color & 0x00FF0000) >> 16) as u8;
-        pixels[index + 3] = ((color & 0xFF000000) >> 24) as u8;
-    }
-}
-
-fn draw_line(p1: Vector2<f32>,
-             p2: Vector2<f32>,
-             color: u32,
-             pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+fn draw_line(p1: Vector2<f32>, p2: Vector2<f32>, color: u32, buffer: &mut DisplayBuffer) {
 
     let threshold = 1.0;
     let sub = p2 - p1;
-
     let dist = (sub.x + sub.y).abs().sqrt();
 
     if dist > threshold {
         let middle = p1 + sub / 2.0;
-        if (middle.x >= 0.0 && middle.x <= WIN_WIDTH as f32) &&
-           (middle.y >= 0.0 && middle.y <= WIN_HEIGHT as f32) {
-            set_pixel(middle.x as usize, middle.y as usize, color, pixels);
+        if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
+           (middle.y >= 0.0 && middle.y <= buffer.height as f32) {
+            buffer.set_pixel(middle.x as usize, middle.y as usize, color);
 
-            draw_line(p1, middle, color, pixels);
-            draw_line(middle, p2, color, pixels);
+            draw_line(p1, middle, color, buffer);
+            draw_line(middle, p2, color, buffer);
         }
     }
 }
@@ -138,6 +121,42 @@ fn draw_line(p1: Vector2<f32>,
 // }
 // }
 
+pub struct DisplayBuffer {
+    pub width: usize,
+    pub height: usize,
+    pub bpp: usize,
+    pub data: Vec<u8>,
+}
+
+impl DisplayBuffer {
+    pub fn new(width: usize, height: usize, bpp: usize) -> DisplayBuffer {
+        return DisplayBuffer {
+                   height: height,
+                   width: width,
+                   bpp: bpp,
+                   data: vec![0; height*width*bpp],
+               };
+    }
+
+    pub fn size(&self) -> usize {
+        return self.height * self.width * self.bpp;
+    }
+
+    pub fn clear(&mut self) {
+        self.data = vec![0;self.size()];
+    }
+
+    pub fn set_pixel(&mut self, x: usize, y: usize, color: u32) {
+        let index: usize = (self.height - y) * self.width * self.bpp + x * self.bpp;
+        if index > 0 && index < (self.size() - self.bpp) {
+            self.data[index] = ((color & 0x000000FF) >> 0) as u8;
+            self.data[index + 1] = ((color & 0x0000FF00) >> 8) as u8;
+            self.data[index + 2] = ((color & 0x00FF0000) >> 16) as u8;
+            self.data[index + 3] = ((color & 0xFF000000) >> 24) as u8;
+        }
+    }
+}
+
 pub struct Mesh {
     pub vertices: Vec<Vector4<f32>>,
     pub poly_sizes: Vec<i32>,
@@ -157,9 +176,7 @@ impl Mesh {
                };
     }
 
-    pub fn render(self: &Mesh,
-                  eye: Vector4<f32>,
-                  pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
+    pub fn render(self: &Mesh, eye: Vector4<f32>, buffer: &mut DisplayBuffer) {
         let m_rot_x = Matrix4::from_rows(&[RowVector4::new(1.0, 0.0, 0.0, 0.0),
                                            RowVector4::new(0.0,
                                                            self.angle.x.cos(),
@@ -198,8 +215,11 @@ impl Mesh {
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let view: Matrix4<f32> = look_at(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
-        let projection: Matrix4<f32> =
-            perspective_projection(0.1, 5.0, 78.0, ((WIN_WIDTH as f32) / (WIN_HEIGHT as f32)));
+        let projection: Matrix4<f32> = perspective_projection(0.1,
+                                                              5.0,
+                                                              78.0,
+                                                              ((buffer.width as f32) /
+                                                               (buffer.height as f32)));
         let xform = projection * view * model;
 
         for p in self.poly_indices.iter() {
@@ -207,9 +227,9 @@ impl Mesh {
             let p2 = project_vertex(self.vertices[p[1] as usize], xform);
             let p3 = project_vertex(self.vertices[p[2] as usize], xform);
 
-            draw_line(p1, p2, 0xFFFFFFFF, pixels);
-            draw_line(p2, p3, 0xFFFFFFFF, pixels);
-            draw_line(p3, p1, 0xFFFFFFFF, pixels);
+            draw_line(p1, p2, 0xFFFFFFFF, buffer);
+            draw_line(p2, p3, 0xFFFFFFFF, buffer);
+            draw_line(p3, p1, 0xFFFFFFFF, buffer);
         }
     }
 
