@@ -125,17 +125,17 @@ pub struct DisplayBuffer {
     pub width: usize,
     pub height: usize,
     pub bpp: usize,
-    pub data: Vec<u8>,
+    pub data: [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL],
 }
 
 impl DisplayBuffer {
     pub fn new(width: usize, height: usize, bpp: usize) -> DisplayBuffer {
         return DisplayBuffer {
-                   height: height,
-                   width: width,
-                   bpp: bpp,
-                   data: vec![0; height*width*bpp],
-               };
+            height: height,
+            width: width,
+            bpp: bpp,
+            data: [0; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL],
+        };
     }
 
     pub fn size(&self) -> usize {
@@ -143,7 +143,7 @@ impl DisplayBuffer {
     }
 
     pub fn clear(&mut self) {
-        self.data = vec![0;self.size()];
+        self.data = [0; WIN_HEIGHT * WIN_WIDTH * BYTES_PER_PIXEL];
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u32) {
@@ -168,12 +168,12 @@ pub struct Mesh {
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
-                   vertices: Vec::new(),
-                   poly_sizes: Vec::new(),
-                   poly_indices: Vec::new(),
-                   position: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                   angle: Vector3::new(0.0, 0.0, 0.0),
-               };
+            vertices: Vec::new(),
+            poly_sizes: Vec::new(),
+            poly_indices: Vec::new(),
+            position: Vector4::new(0.0, 0.0, 0.0, 1.0),
+            angle: Vector3::new(0.0, 0.0, 0.0),
+        };
     }
 
     pub fn render(self: &Mesh, eye: Vector4<f32>, buffer: &mut DisplayBuffer) {
