@@ -222,7 +222,7 @@ impl Mesh {
                                                                (buffer.height as f32)));
         let xform = projection * view * model;
 
-        for p in self.poly_indices.iter() {
+        for p in &self.poly_indices {
             let p1 = project_vertex(self.vertices[p[0] as usize], xform);
             let p2 = project_vertex(self.vertices[p[1] as usize], xform);
             let p3 = project_vertex(self.vertices[p[2] as usize], xform);

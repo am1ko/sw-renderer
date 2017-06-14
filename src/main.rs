@@ -102,7 +102,7 @@ fn main() {
         eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
-        //rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
+        // rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         db.clear();
         cube.render(eye_pos, &mut db);
 
