@@ -87,7 +87,7 @@ fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4
     return rotation * translation;
 }
 
-fn draw_line(p1: Vector2<f32>, p2: Vector2<f32>, color: u32, buffer: &mut DisplayBuffer) {
+fn draw_line(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &mut DisplayBuffer) {
 
     let threshold = 1.0;
     let sub = p2 - p1;
@@ -121,6 +121,14 @@ fn draw_line(p1: Vector2<f32>, p2: Vector2<f32>, color: u32, buffer: &mut Displa
 // }
 // }
 
+#[derive(Copy, Clone)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8
+}
+
 pub struct DisplayBuffer {
     pub width: usize,
     pub height: usize,
@@ -146,13 +154,13 @@ impl DisplayBuffer {
         self.data = [0; WIN_HEIGHT * WIN_WIDTH * BYTES_PER_PIXEL];
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize, color: u32) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
         let index: usize = (self.height - y) * self.width * self.bpp + x * self.bpp;
         if index > 0 && index < (self.size() - self.bpp) {
-            self.data[index] = ((color & 0x000000FF) >> 0) as u8;
-            self.data[index + 1] = ((color & 0x0000FF00) >> 8) as u8;
-            self.data[index + 2] = ((color & 0x00FF0000) >> 16) as u8;
-            self.data[index + 3] = ((color & 0xFF000000) >> 24) as u8;
+            self.data[index] = color.r;
+            self.data[index + 1] = color.g;
+            self.data[index + 2] = color.b;
+            self.data[index + 3] = color.a;
         }
     }
 }
@@ -221,15 +229,16 @@ impl Mesh {
                                                               ((buffer.width as f32) /
                                                                (buffer.height as f32)));
         let xform = projection * view * model;
+        let white = Color{r: 0, g: 255, b: 0, a: 255};
 
         for p in &self.poly_indices {
             let p1 = project_vertex(self.vertices[p[0] as usize], xform);
             let p2 = project_vertex(self.vertices[p[1] as usize], xform);
             let p3 = project_vertex(self.vertices[p[2] as usize], xform);
 
-            draw_line(p1, p2, 0xFFFFFFFF, buffer);
-            draw_line(p2, p3, 0xFFFFFFFF, buffer);
-            draw_line(p3, p1, 0xFFFFFFFF, buffer);
+            draw_line(p1, p2, white, buffer);
+            draw_line(p2, p3, white, buffer);
+            draw_line(p3, p1, white, buffer);
         }
     }
 
