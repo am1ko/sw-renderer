@@ -8,8 +8,9 @@
 // 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
-extern crate nalgebra as na;
-use self::na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
+use rasterization;
+
+use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 
 pub const WIN_WIDTH: usize = 1024;
 pub const WIN_HEIGHT: usize = 768;
@@ -88,24 +89,6 @@ fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) 
 
     // Use inverse multiplication order to produce inversed combined matrix
     return rotation * translation;
-}
-
-fn draw_line(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &mut DisplayBuffer) {
-
-    let threshold = 1.0;
-    let sub = p2 - p1;
-    let dist = (sub.x + sub.y).abs().sqrt();
-
-    if dist > threshold {
-        let middle = p1 + sub / 2.0;
-        if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
-           (middle.y >= 0.0 && middle.y <= buffer.height as f32) {
-            buffer.set_pixel(middle.x as usize, middle.y as usize, color);
-
-            draw_line(p1, middle, color, buffer);
-            draw_line(middle, p2, color, buffer);
-        }
-    }
 }
 
 // fn draw_point(p: Vector2<f32>,
@@ -240,9 +223,9 @@ impl Mesh {
             let p2 = transform_vertex(self.vertices[p[1] as usize], xform);
             let p3 = transform_vertex(self.vertices[p[2] as usize], xform);
 
-            draw_line(p1, p2, white, buffer);
-            draw_line(p2, p3, white, buffer);
-            draw_line(p3, p1, white, buffer);
+            rasterization::draw_line(p1, p2, white, buffer);
+            rasterization::draw_line(p2, p3, white, buffer);
+            rasterization::draw_line(p3, p1, white, buffer);
         }
     }
 
