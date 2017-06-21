@@ -1,3 +1,13 @@
+// Software rendering pipeline
+//
+// For each mesh m
+// For each vertex v (dim 4) in m
+// 1) Model to world space (MODEL matrix 4x4)
+// 2) World to camera space (VIEW matrix 4x4)
+// 3) Camera to homogeneous clip space (PROJECTION matrix 4x4), w = 1
+// 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
+// 5) Viewport transform => raster space [0, W-1, 0, H-1]
+
 extern crate nalgebra as na;
 use self::na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 
@@ -5,31 +15,24 @@ pub const WIN_WIDTH: usize = 1024;
 pub const WIN_HEIGHT: usize = 768;
 pub const BYTES_PER_PIXEL: usize = 4;
 
-fn to_ndc_space(v: Vector2<f32>) -> Vector2<f32> {
-    let ret = Vector2::new((1.0 + v.x) / 2.0, (1.0 + v.y) / 2.0);
+fn transform_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
+    // Steps 1 - 3: MODEL-VIEW-PROJECTION transform
+    let v_camera = m * v;
 
-    return ret;
-}
+    // Step 4.1: CLIPPING
+    // TODO(amiko)
 
-fn to_raster_space(v: Vector2<f32>) -> Vector2<f32> {
-    return Vector2::new(v.x * WIN_WIDTH as f32, v.y * WIN_HEIGHT as f32);
-}
-
-fn project_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
-    let v_xformed = m * v;
-
+    // Step 4.2: PERSPECTIVE DIVIDE (normalization)
     // Perspective division, far away points moved closer to origin
     // To screen space. All visible points between [-1, 1].
-    let scr = Vector2::new(v_xformed.x / v_xformed.w, v_xformed.y / v_xformed.w);
+    let v_ndc = Vector3::new(v_camera.x / v_camera.w, v_camera.y / v_camera.w,
+                             v_camera.z / v_camera.w);
 
-    // To Normalized Device Coordinates. All visible points between [0, 1]
-    let n = to_ndc_space(scr);
-
-    // To actual screen pixel coordinates
-    return to_raster_space(n);
+    // Step 5: Viewport transform
+    Vector2::new((1.0 + v_ndc.x)*0.5 * WIN_WIDTH as f32, (1.0 + v_ndc.y)*0.5 * WIN_HEIGHT as f32)
 }
 
-fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
+fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
     let deg_to_rad = ::std::f32::consts::PI / 180.0;
     let size = n * (deg_to_rad * angle_of_view / 2.0).tan();
     let l = -size;
@@ -47,7 +50,7 @@ fn perspective_projection(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32)
 
 }
 
-fn look_at(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
+fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
     // Rotate so that the line of sight from the eye position to the target maps to the z axis.
     // Camera up direction maps to y axis. x- axis is defined from the other two by cross
     // product
@@ -222,19 +225,20 @@ impl Mesh {
                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
-        let view: Matrix4<f32> = look_at(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
-        let projection: Matrix4<f32> = perspective_projection(0.1,
-                                                              5.0,
-                                                              78.0,
-                                                              ((buffer.width as f32) /
-                                                               (buffer.height as f32)));
+        let view: Matrix4<f32> = build_view_matrix(eye, self.position,
+                                                   Vector4::new(0.0, 1.0, 0.0, 0.0));
+        let projection: Matrix4<f32> = build_perspective_matrix(0.1,
+                                                                5.0,
+                                                                78.0,
+                                                                ((buffer.width as f32) /
+                                                                (buffer.height as f32)));
         let xform = projection * view * model;
         let white = Color{r: 0, g: 255, b: 0, a: 255};
 
         for p in &self.poly_indices {
-            let p1 = project_vertex(self.vertices[p[0] as usize], xform);
-            let p2 = project_vertex(self.vertices[p[1] as usize], xform);
-            let p3 = project_vertex(self.vertices[p[2] as usize], xform);
+            let p1 = transform_vertex(self.vertices[p[0] as usize], xform);
+            let p2 = transform_vertex(self.vertices[p[1] as usize], xform);
+            let p3 = transform_vertex(self.vertices[p[2] as usize], xform);
 
             draw_line(p1, p2, white, buffer);
             draw_line(p2, p3, white, buffer);
