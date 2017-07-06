@@ -16,7 +16,7 @@ pub const WIN_WIDTH: usize = 1024;
 pub const WIN_HEIGHT: usize = 768;
 pub const BYTES_PER_PIXEL: usize = 4;
 
-fn transform_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
+fn transform_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<usize> {
     // Steps 1 - 3: MODEL-VIEW-PROJECTION transform
     let v_camera = m * v;
 
@@ -26,11 +26,13 @@ fn transform_vertex(v: Vector4<f32>, m: Matrix4<f32>) -> Vector2<f32> {
     // Step 4.2: PERSPECTIVE DIVIDE (normalization)
     // Perspective division, far away points moved closer to origin
     // To screen space. All visible points between [-1, 1].
-    let v_ndc = Vector3::new(v_camera.x / v_camera.w, v_camera.y / v_camera.w,
+    let v_ndc = Vector3::new(v_camera.x / v_camera.w,
+                             v_camera.y / v_camera.w,
                              v_camera.z / v_camera.w);
 
     // Step 5: Viewport transform
-    Vector2::new((1.0 + v_ndc.x)*0.5 * WIN_WIDTH as f32, (1.0 + v_ndc.y)*0.5 * WIN_HEIGHT as f32)
+    Vector2::new(((1.0 + v_ndc.x) * 0.5 * (WIN_WIDTH as f32)) as usize,
+                 ((1.0 + v_ndc.y) * 0.5 * (WIN_HEIGHT as f32)) as usize)
 }
 
 fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
@@ -112,7 +114,7 @@ pub struct Color {
     pub r: u8,
     pub g: u8,
     pub b: u8,
-    pub a: u8
+    pub a: u8,
 }
 
 pub struct DisplayBuffer {
@@ -141,6 +143,8 @@ impl DisplayBuffer {
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
+        assert!(x < self.width);
+        assert!(y < self.height);
         let index: usize = (self.height - y) * self.width * self.bpp + x * self.bpp;
         if index > 0 && index < (self.size() - self.bpp) {
             self.data[index] = color.r;
@@ -208,24 +212,29 @@ impl Mesh {
                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
-        let view: Matrix4<f32> = build_view_matrix(eye, self.position,
-                                                   Vector4::new(0.0, 1.0, 0.0, 0.0));
+        let view: Matrix4<f32> =
+            build_view_matrix(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1,
                                                                 5.0,
                                                                 78.0,
                                                                 ((buffer.width as f32) /
-                                                                (buffer.height as f32)));
+                                                                 (buffer.height as f32)));
         let xform = projection * view * model;
-        let white = Color{r: 0, g: 255, b: 0, a: 255};
+        let white = Color {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        };
 
         for p in &self.poly_indices {
             let p1 = transform_vertex(self.vertices[p[0] as usize], xform);
             let p2 = transform_vertex(self.vertices[p[1] as usize], xform);
             let p3 = transform_vertex(self.vertices[p[2] as usize], xform);
 
-            rasterization::draw_line(p1, p2, white, buffer);
-            rasterization::draw_line(p2, p3, white, buffer);
-            rasterization::draw_line(p3, p1, white, buffer);
+            rasterization::draw_line_usize(p1, p2, white, buffer);
+            rasterization::draw_line_usize(p2, p3, white, buffer);
+            rasterization::draw_line_usize(p3, p1, white, buffer);
         }
     }
 
