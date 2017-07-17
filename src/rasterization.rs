@@ -60,7 +60,38 @@ pub fn draw_line_usize(p1: Vector2<usize>,
             y += sy
         }
     }
+}
 
+fn order_by_y(p1: Vector2<f32>, p2: Vector2<f32>, p3: Vector2<f32>) -> [Vector2<f32>; 3]{
+    let mut inputs = [p1, p2, p3];
+    inputs.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+    inputs
+}
+
+// p1 is the top vertex
+fn fill_bottom_flat_triangle(p1: Vector2<u32>, p2: Vector2<u32>, p3: Vector2<u32>){
+    let inv_slope_1 = (p2.x - p1.x) / (p2.y - p1.y);
+    let inv_slope_2 = (p3.x - p1.x) / (p3.y - p1.y);
+
+    let mut curr_x_1 = p1.x;
+    let mut curr_x_2 = p1.x;
+
+    for i in 0 .. (p1.y - p2.y) {
+        //draw_line
+
+        curr_x_1 += inv_slope_1;
+        curr_x_2 += inv_slope_2;
+    }
+}
+
+pub fn draw_triangle(p1: Vector2<f32>, p2: Vector2<f32>, p3: Vector2<f32>){
+    let ordered = order_by_y(p1, p2, p3);
+
+    let ip1 = Vector2::new(p1.x as u32, p1.y as u32);
+    let ip2 = Vector2::new(p2.x as u32, p2.y as u32);
+    let ip3 = Vector2::new(p3.x as u32, p3.y as u32);
+
+    fill_bottom_flat_triangle(ip1, ip2, ip3);
 }
 
 // fn draw_point(p: Vector2<f32>,
@@ -101,5 +132,17 @@ mod test {
         super::draw_line_usize(p1, p2, color, &mut db);
 
         assert_eq!(db.data[0], 1);
+    }
+
+    #[test]
+    fn test_draw_triangle() {
+        let p1 = Vector2::new(1.0, 1.0);
+        let p2 = Vector2::new(1.0, 2.1);
+        let p3 = Vector2::new(1.0, 3.5);
+
+        let result = order_by_y(p2, p3, p1);
+        assert!(result[0].y == 1.0);
+        assert!(result[1].y == 2.1);
+        assert!(result[2].y == 3.5);
     }
 }
