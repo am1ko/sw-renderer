@@ -131,8 +131,8 @@ pub fn draw_triangle_usize(p1: Vector2<usize>,
         let pf3: Vector2<f32> = Vector2::new(p3.x as f32, p3.y as f32);
 
         // split the triangle into two: a bottom flat one and a top flat one
-        let x = p1.x + (((pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize);
-        let p4: Vector2<usize> = Vector2::new(x, p2.y);
+        let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
+        let p4: Vector2<usize> = Vector2::new(x4, p2.y);
         fill_bottom_flat_triangle(p1, p2, p4, color, buffer);
         fill_top_flat_triangle(p2, p4, p3, color, buffer);
     }

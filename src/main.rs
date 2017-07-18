@@ -104,7 +104,7 @@ fn main() {
 
         // rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         db.clear();
-        //cube.render(eye_pos, &mut db);
+        cube.render(eye_pos, &mut db);
         /*
         let mouse_x = window.mouse_position().x;
         let mouse_y = /*core::WIN_HEIGHT as i32 -*/ window.mouse_position().y;
@@ -121,8 +121,6 @@ fn main() {
             let p2: na::Vector2<usize> = na::Vector2::new(mouse_x as usize, mouse_y as usize);
             rasterization::draw_line_usize(p1, p2, color, &mut db);
         }
-        */
-
         let color = core::Color {
             r: 255,
             g: 0,
@@ -144,6 +142,8 @@ fn main() {
         let p3: na::Vector2<usize> = na::Vector2::new(100, 334);
 
         rasterization::draw_triangle_usize(p1, p2, p3, color, &mut db);
+        */
+
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
