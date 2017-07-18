@@ -129,12 +129,21 @@ fn main() {
             b: 0,
             a: 255,
         };
-        let p1: na::Vector2<usize> = na::Vector2::new(5, 5);
-        let p2: na::Vector2<usize> = na::Vector2::new(512, 700);
-        let p3: na::Vector2<usize> = na::Vector2::new(1020, 6);
+        let p1: na::Vector2<usize> = na::Vector2::new(0, core::WIN_HEIGHT/2);
+        let p2: na::Vector2<usize> = na::Vector2::new(core::WIN_WIDTH-1, core::WIN_HEIGHT/2);
+        rasterization::draw_line_usize(p1, p2, color, &mut db);
+
+        let color = core::Color {
+            r: 0,
+            g: 0,
+            b: 255,
+            a: 255,
+        };
+        let p1: na::Vector2<usize> = na::Vector2::new(0, 384);
+        let p2: na::Vector2<usize> = na::Vector2::new(50, 434);
+        let p3: na::Vector2<usize> = na::Vector2::new(100, 334);
 
         rasterization::draw_triangle_usize(p1, p2, p3, color, &mut db);
-
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();

@@ -74,34 +74,68 @@ fn fill_bottom_flat_triangle(p1: Vector2<usize>,
                              p3: Vector2<usize>,
                              color: Color,
                              buffer: &mut DisplayBuffer) {
-    let inv_slope_1 = (p1.x as f32 - p2.x as f32) / (p1.y as f32 - p2.y as f32);
-    let inv_slope_2 = (p1.x as f32 - p3.x as f32) / (p1.y as f32 - p3.y as f32);
+    let inv_slope_1 = (p1.x as f32 - p2.x as f32) / (p2.y as f32 - p1.y as f32);
+    let inv_slope_2 = (p1.x as f32 - p3.x as f32) / (p2.y as f32 - p1.y as f32);
 
-    let mut curr_x_1 = p1.x as f32;
-    let mut curr_x_2 = p1.x as f32;
+    let mut curr_x_1: f32 = p1.x as f32;
+    let mut curr_x_2: f32 = p1.x as f32;
 
     for y in (p2.y..p1.y + 1).rev() {
         let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
         let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
         draw_line_usize(scan_line_start, scan_line_end, color, buffer);
 
-        println!("ss {} {}", scan_line_start.x, scan_line_start.y);
-        println!("se {} {}", scan_line_end.x, scan_line_end.y);
-
         curr_x_1 += inv_slope_1;
         curr_x_2 += inv_slope_2;
-        println!("curr x {} {}", curr_x_1, curr_x_2);
     }
 }
 
+// p3 is the bottom vertex
+fn fill_top_flat_triangle(p1: Vector2<usize>,
+                          p2: Vector2<usize>,
+                          p3: Vector2<usize>,
+                          color: Color,
+                          buffer: &mut DisplayBuffer) {
+    let inv_slope_1 = (p1.x as f32 - p3.x as f32) / (p3.y as f32 - p1.y as f32);
+    let inv_slope_2 = (p2.x as f32 - p3.x as f32) / (p3.y as f32 - p2.y as f32);
+
+    let mut curr_x_1 = p3.x as f32;
+    let mut curr_x_2 = p3.x as f32;
+
+    for y in p3.y..p1.y + 1 {
+        let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
+        let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
+        draw_line_usize(scan_line_start, scan_line_end, color, buffer);
+
+        curr_x_1 -= inv_slope_1;
+        curr_x_2 -= inv_slope_2;
+    }
+}
 pub fn draw_triangle_usize(p1: Vector2<usize>,
                            p2: Vector2<usize>,
                            p3: Vector2<usize>,
                            color: Color,
                            buffer: &mut DisplayBuffer) {
     let ordered = order_by_y(p1, p2, p3);
+    let p1 = ordered[2];
+    let p2 = ordered[1];
+    let p3 = ordered[0];
 
-    fill_bottom_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
+    if ordered[1].y == ordered[2].y {
+        fill_top_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
+    } else if ordered[0].y == ordered[1].y {
+        fill_bottom_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
+    } else {
+        let pf1: Vector2<f32> = Vector2::new(p1.x as f32, p1.y as f32);
+        let pf2: Vector2<f32> = Vector2::new(p2.x as f32, p2.y as f32);
+        let pf3: Vector2<f32> = Vector2::new(p3.x as f32, p3.y as f32);
+
+        // split the triangle into two: a bottom flat one and a top flat one
+        let x = p1.x + (((pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize);
+        let p4: Vector2<usize> = Vector2::new(x, p2.y);
+        fill_bottom_flat_triangle(p1, p2, p4, color, buffer);
+        fill_top_flat_triangle(p2, p4, p3, color, buffer);
+    }
 }
 
 // fn draw_point(p: Vector2<f32>,
