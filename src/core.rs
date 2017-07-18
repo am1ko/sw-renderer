@@ -220,21 +220,26 @@ impl Mesh {
                                                                 ((buffer.width as f32) /
                                                                  (buffer.height as f32)));
         let xform = projection * view * model;
-        let white = Color {
-            r: 0,
-            g: 255,
-            b: 0,
-            a: 255,
-        };
 
-        for p in &self.poly_indices {
+        // loop through all polygons, each consists of 3 vertices
+        for (i, p) in self.poly_indices.iter().enumerate() {
+            let color = Color {
+                r: 0,
+                g: 255,
+                b: 0,
+                a: (255 / 4 + 3 * 255 / 4 * i / self.poly_indices.len()) as u8,
+            };
+
             let p1 = transform_vertex(self.vertices[p[0] as usize], xform);
             let p2 = transform_vertex(self.vertices[p[1] as usize], xform);
             let p3 = transform_vertex(self.vertices[p[2] as usize], xform);
 
-            rasterization::draw_line_usize(p1, p2, white, buffer);
-            rasterization::draw_line_usize(p2, p3, white, buffer);
-            rasterization::draw_line_usize(p3, p1, white, buffer);
+            rasterization::draw_triangle_usize(p1, p2, p3, color, buffer);
+
+            // wireframe rendering
+            // rasterization::draw_line_usize(p1, p2, color, buffer);
+            // rasterization::draw_line_usize(p2, p3, color, buffer);
+            // rasterization::draw_line_usize(p3, p1, color, buffer);
         }
     }
 
