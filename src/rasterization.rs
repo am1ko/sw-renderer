@@ -121,6 +121,11 @@ pub fn draw_triangle_usize(p1: Vector2<usize>,
     let p2 = ordered[1];
     let p3 = ordered[0];
 
+    if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
+       p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height {
+        return;
+    }
+
     if ordered[1].y == ordered[2].y {
         fill_top_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
     } else if ordered[0].y == ordered[1].y {
