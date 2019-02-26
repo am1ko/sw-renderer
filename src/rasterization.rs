@@ -143,22 +143,6 @@ pub fn draw_triangle_usize(p1: Vector2<usize>,
     }
 }
 
-// fn draw_point(p: Vector2<f32>,
-// color: u32,
-// pixels: &mut [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL]) {
-//
-// for i in -1..2 {
-// for j in -1..2 {
-// let px = p.x + ((i as i32) as f32);
-// let py = p.y + ((j as i32) as f32);
-//
-// if px > 0.0 && py > 0.0 {
-// set_pixel(px as usize, py as usize, color, pixels);
-// }
-// }
-// }
-// }
-
 #[cfg(test)]
 mod test {
     extern crate core;
@@ -167,22 +151,26 @@ mod test {
     use core::{Color, DisplayBuffer};
     use na::Vector2;
     #[test]
-    // fn test_draw_line_usize() {
-    // crashes for some reason
-    // let p1: Vector2<usize> = Vector2::new(0, 1);
-    // let p2: Vector2<usize> = Vector2::new(6, 4);
-    // let mut db = DisplayBuffer::new(1024, 768, 1);
-    // let color = Color {
-    //     r: 1,
-    //     g: 0,
-    //     b: 0,
-    //     a: 0,
-    // };
-    //
-    // super::draw_line_usize(p1, p2, color, &mut db);
-    //
-    // assert_eq!(db.data[0], 1);
-    //
+    fn test_draw_line_usize() {
+        // crashes for some reason
+        let p1: Vector2<usize> = Vector2::new(0,    767);
+        let p2: Vector2<usize> = Vector2::new(1023, 767);
+        let mut db = DisplayBuffer::new(1024, 768, 4);
+        let color = Color {
+            r: 1,
+            g: 2,
+            b: 3,
+            a: 4,
+        };
+
+        super::draw_line_usize(p1, p2, color, &mut db);
+
+        assert_eq!(db.data[0], 1);
+        assert_eq!(db.data[1], 2);
+        assert_eq!(db.data[2], 3);
+        assert_eq!(db.data[3], 4);
+    }
+
     #[test]
     fn test_draw_triangle() {
         let p1 = Vector2::new(1, 1);

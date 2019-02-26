@@ -145,8 +145,8 @@ impl DisplayBuffer {
     pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
         assert!(x < self.width);
         assert!(y < self.height);
-        let index: usize = (self.height - y) * self.width * self.bpp + x * self.bpp;
-        if index > 0 && index < (self.size() - self.bpp) {
+        let index: usize = (self.height - y - 1) * self.width * self.bpp + x * self.bpp;
+        if index < (self.size() - self.bpp) {
             self.data[index] = color.r;
             self.data[index + 1] = color.g;
             self.data[index + 2] = color.b;
@@ -212,13 +212,13 @@ impl Mesh {
                                            RowVector4::new(0.0, 0.0, 0.0, 1.0)]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
+        let aspect_ratio = (buffer.width as f32) / (buffer.height as f32);
         let view: Matrix4<f32> =
             build_view_matrix(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1,
                                                                 5.0,
                                                                 78.0,
-                                                                ((buffer.width as f32) /
-                                                                 (buffer.height as f32)));
+                                                                aspect_ratio);
         let xform = projection * view * model;
 
         // loop through all polygons, each consists of 3 vertices
