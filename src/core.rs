@@ -121,7 +121,7 @@ pub struct DisplayBuffer {
     pub width: usize,
     pub height: usize,
     pub bpp: usize,
-    pub data: [u8; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL],
+    pub data: Box<[u8]>,
 }
 
 impl DisplayBuffer {
@@ -130,7 +130,7 @@ impl DisplayBuffer {
             height: height,
             width: width,
             bpp: bpp,
-            data: [0; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL],
+            data: vec![0; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL].into_boxed_slice()
         };
     }
 
@@ -139,7 +139,7 @@ impl DisplayBuffer {
     }
 
     pub fn clear(&mut self) {
-        self.data = [0; WIN_HEIGHT * WIN_WIDTH * BYTES_PER_PIXEL];
+        self.data = vec![0; WIN_WIDTH * WIN_HEIGHT * BYTES_PER_PIXEL].into_boxed_slice();
     }
 
     pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
