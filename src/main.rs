@@ -3,7 +3,7 @@ extern crate nalgebra as na;
 extern crate renderer;
 
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
-use sfml::window::{Event, Key, style, VideoMode};
+use sfml::window::{Event, Key, Style, VideoMode};
 use sfml::system::Clock;
 use na::{Vector3, Vector4};
 use renderer::*;
@@ -13,9 +13,8 @@ const FPS: f32 = 60.0;
 fn main() {
     let mut clock = Clock::start();
     let vm = VideoMode::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32, 32);
-    let w = RenderWindow::new(vm, "GFX demo", style::CLOSE, &Default::default());
+    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
 
-    let mut window = w.unwrap();
     window.set_vertical_sync_enabled(true);
 
     let mut texture = Texture::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32).unwrap();
@@ -46,7 +45,12 @@ fn main() {
     loop {
         let mut sprite = Sprite::new();
 
-        for event in window.events() {
+        loop {
+            let event = match window.poll_event() {
+                Some(val) => val,
+                None => break,
+            };
+
             match event {
                 Event::Closed |
                 Event::KeyPressed { code: Key::Q, .. } |
@@ -144,13 +148,12 @@ fn main() {
         rasterization::draw_triangle_usize(p1, p2, p3, color, &mut db);
         */
 
-
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
             texture.update_from_pixels(&*db.data, db.width as u32, db.height as u32, 0, 0);
             sprite.set_texture(&texture, false);
 
-            window.clear(&Color::black());
+            window.clear(&Color::BLACK);
             window.draw(&sprite);
             window.display();
         }
