@@ -12,6 +12,15 @@ use rasterization;
 
 use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 
+/// Transforms a single vertex from model space to viewport
+///
+/// # Arguments
+///
+/// * `v` - A vertex in model coordinates
+/// * `m` - A transformation matrix
+/// * `vp_width` - Width of the viewport
+/// * `vp_height` - Height of the viewport
+///
 fn transform_vertex(
     v: Vector4<f32>,
     m: Matrix4<f32>,
@@ -111,18 +120,28 @@ fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) 
     return rotation * translation;
 }
 
+/// Color in RGBA8888 format
 #[derive(Copy, Clone)]
 pub struct Color {
+    /// Red component intensity
     pub r: u8,
+    /// Green component intensity
     pub g: u8,
+    /// Blue component intensity
     pub b: u8,
+    /// Alpha value
     pub a: u8,
 }
 
+/// Display buffer defines a memory area that is used for rendering a raw image
 pub struct DisplayBuffer {
+    /// Width of the display area in pixels
     pub width: usize,
+    /// Height of the display area in pixels
     pub height: usize,
+    /// Bytes per pixel
     pub bpp: usize,
+    /// Contents of the buffer (pixel data)
     pub data: Box<[u8]>,
 }
 
@@ -136,14 +155,23 @@ impl DisplayBuffer {
         };
     }
 
+    /// return the size of the buffer in bytes
     pub fn size(&self) -> usize {
         return self.height * self.width * self.bpp;
     }
 
+    /// Reset the contents of the buffer so that all pixels are black
     pub fn clear(&mut self) {
         self.data = vec![0; self.width * self.height * self.bpp].into_boxed_slice();
     }
 
+    /// Set a single pixel to a desired color
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - X coordinate in pixels, value 0 corresponds to left edge
+    /// * `y` - Y coordinate in pixels, value 0 correspoonds to bottom edge
+    /// * 'color' - Color of the pixel
     pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
         assert!(x < self.width);
         assert!(y < self.height);
@@ -157,11 +185,18 @@ impl DisplayBuffer {
     }
 }
 
+/// A mesh is a collection of triangles that form a 3D surface
 pub struct Mesh {
+    /// Individual vertices that make up the surface of the mesh. Each vertex is
+    /// a 4D vector [x, y, z, w]
     pub vertices: Vec<Vector4<f32>>,
+    /// Size of each polygon in vertices
     pub poly_sizes: Vec<i32>,
+    /// Specifies which vertices make a single polygon.
     pub poly_indices: Vec<[i32; 3]>,
+    /// World position of the center of the mesh
     pub position: Vector4<f32>,
+    /// Rotation of the mesh around all 3 axis vectors
     pub angle: Vector3<f32>,
 }
 
@@ -176,6 +211,12 @@ impl Mesh {
         };
     }
 
+    /// Render a mesh into a display buffer
+    ///
+    /// # Arguments
+    ///
+    /// * `eye` - Position of the camera eye
+    /// * `buffer` - Display buffer (render target)
     pub fn render(self: &Mesh, eye: Vector4<f32>, buffer: &mut DisplayBuffer) {
         let m_rot_x = Matrix4::from_rows(
             &[
@@ -255,6 +296,11 @@ impl Mesh {
         }
     }
 
+    /// Translate (move) a mesh in spce
+    ///
+    /// # Arguments
+    ///
+    /// * `translation` - Vector that specifies the desired displacement
     pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
         let xform = Matrix4::from_rows(
             &[
@@ -267,6 +313,11 @@ impl Mesh {
         self.position = xform * self.position;
     }
 
+    /// Rotate a mesh
+    ///
+    /// # Arguments
+    ///
+    /// * `angle` - Desired rotation angle around each cartesian axis in radians
     pub fn rotate(this: &mut Mesh, angle: Vector3<f32>) {
         this.angle.x = this.angle.x + angle.x;
         this.angle.y = this.angle.y + angle.y;
