@@ -9,38 +9,53 @@ use na::{Vector3, Vector4};
 use renderer::*;
 
 const FPS: f32 = 60.0;
+const WIN_WIDTH: usize = 1024;
+const WIN_HEIGHT: usize = 768;
 
 fn main() {
     let mut clock = Clock::start();
-    let vm = VideoMode::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32, 32);
+    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
     let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
 
     window.set_vertical_sync_enabled(true);
 
-    let mut texture = Texture::new(core::WIN_WIDTH as u32, core::WIN_HEIGHT as u32).unwrap();
+    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
 
     let mut cube = core::Mesh::new();
-    cube.vertices
-        .append(&mut vec![Vector4::new(-1.0, 1.0, 1.0, 1.0),
-                          Vector4::new(1.0, 1.0, 1.0, 1.0),
-                          Vector4::new(-1.0, -1.0, 1.0, 1.0),
-                          Vector4::new(1.0, -1.0, 1.0, 1.0),
-                          Vector4::new(-1.0, 1.0, -1.0, 1.0),
-                          Vector4::new(1.0, 1.0, -1.0, 1.0),
-                          Vector4::new(1.0, -1.0, -1.0, 1.0),
-                          Vector4::new(-1.0, -1.0, -1.0, 1.0)]);
+    cube.vertices.append(&mut vec![
+        Vector4::new(-1.0, 1.0, 1.0, 1.0),
+        Vector4::new(1.0, 1.0, 1.0, 1.0),
+        Vector4::new(-1.0, -1.0, 1.0, 1.0),
+        Vector4::new(1.0, -1.0, 1.0, 1.0),
+        Vector4::new(-1.0, 1.0, -1.0, 1.0),
+        Vector4::new(1.0, 1.0, -1.0, 1.0),
+        Vector4::new(1.0, -1.0, -1.0, 1.0),
+        Vector4::new(-1.0, -1.0, -1.0, 1.0),
+    ]);
 
-    cube.poly_sizes
-        .append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
-    cube.poly_indices
-        .append(&mut vec![[0, 1, 2], [1, 2, 3], [1, 3, 6], [1, 5, 6], [0, 1, 4], [1, 4, 5],
-                          [2, 3, 7], [3, 6, 7], [0, 2, 7], [0, 4, 7], [4, 5, 6], [4, 6, 7]]);
+    cube.poly_sizes.append(
+        &mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    );
+    cube.poly_indices.append(&mut vec![
+        [0, 1, 2],
+        [1, 2, 3],
+        [1, 3, 6],
+        [1, 5, 6],
+        [0, 1, 4],
+        [1, 4, 5],
+        [2, 3, 7],
+        [3, 6, 7],
+        [0, 2, 7],
+        [0, 4, 7],
+        [4, 5, 6],
+        [4, 6, 7],
+    ]);
 
     cube.translate(Vector3::new(0.0, 0.0, -3.0));
 
     let mut eye_pos = Vector4::new(0.0, 0.0, 0.0, 1.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
-    let mut db = core::DisplayBuffer::new(core::WIN_WIDTH, core::WIN_HEIGHT, 4);
+    let mut db = core::DisplayBuffer::new(WIN_WIDTH, WIN_HEIGHT, 4);
 
     loop {
         let mut sprite = Sprite::new();

@@ -1,10 +1,7 @@
 use core::{Color, DisplayBuffer};
 use na::Vector2;
 
-pub fn draw_line_f32(p1: Vector2<f32>,
-                     p2: Vector2<f32>,
-                     color: Color,
-                     buffer: &mut DisplayBuffer) {
+pub fn draw_line_f32(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &mut DisplayBuffer) {
 
     let threshold = 1.0;
     let sub = p2 - p1;
@@ -13,7 +10,8 @@ pub fn draw_line_f32(p1: Vector2<f32>,
     if dist > threshold {
         let middle = p1 + sub / 2.0;
         if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
-           (middle.y >= 0.0 && middle.y <= buffer.height as f32) {
+            (middle.y >= 0.0 && middle.y <= buffer.height as f32)
+        {
             buffer.set_pixel(middle.x as usize, middle.y as usize, color);
 
             draw_line_f32(p1, middle, color, buffer);
@@ -22,10 +20,12 @@ pub fn draw_line_f32(p1: Vector2<f32>,
     }
 }
 
-pub fn draw_line_usize(p1: Vector2<usize>,
-                       p2: Vector2<usize>,
-                       color: Color,
-                       buffer: &mut DisplayBuffer) {
+pub fn draw_line_usize(
+    p1: Vector2<usize>,
+    p2: Vector2<usize>,
+    color: Color,
+    buffer: &mut DisplayBuffer,
+) {
     if p1.x >= buffer.width || p1.y >= buffer.height {
         return;
     }
@@ -69,11 +69,13 @@ fn order_by_y(p1: Vector2<usize>, p2: Vector2<usize>, p3: Vector2<usize>) -> [Ve
 }
 
 // p1 is the top vertex
-fn fill_bottom_flat_triangle(p1: Vector2<usize>,
-                             p2: Vector2<usize>,
-                             p3: Vector2<usize>,
-                             color: Color,
-                             buffer: &mut DisplayBuffer) {
+fn fill_bottom_flat_triangle(
+    p1: Vector2<usize>,
+    p2: Vector2<usize>,
+    p3: Vector2<usize>,
+    color: Color,
+    buffer: &mut DisplayBuffer,
+) {
     let inv_slope_1 = (p1.x as f32 - p2.x as f32) / (p2.y as f32 - p1.y as f32);
     let inv_slope_2 = (p1.x as f32 - p3.x as f32) / (p2.y as f32 - p1.y as f32);
 
@@ -91,11 +93,13 @@ fn fill_bottom_flat_triangle(p1: Vector2<usize>,
 }
 
 // p3 is the bottom vertex
-fn fill_top_flat_triangle(p1: Vector2<usize>,
-                          p2: Vector2<usize>,
-                          p3: Vector2<usize>,
-                          color: Color,
-                          buffer: &mut DisplayBuffer) {
+fn fill_top_flat_triangle(
+    p1: Vector2<usize>,
+    p2: Vector2<usize>,
+    p3: Vector2<usize>,
+    color: Color,
+    buffer: &mut DisplayBuffer,
+) {
     let inv_slope_1 = (p1.x as f32 - p3.x as f32) / (p3.y as f32 - p1.y as f32);
     let inv_slope_2 = (p2.x as f32 - p3.x as f32) / (p3.y as f32 - p2.y as f32);
 
@@ -111,18 +115,21 @@ fn fill_top_flat_triangle(p1: Vector2<usize>,
         curr_x_2 -= inv_slope_2;
     }
 }
-pub fn draw_triangle_usize(p1: Vector2<usize>,
-                           p2: Vector2<usize>,
-                           p3: Vector2<usize>,
-                           color: Color,
-                           buffer: &mut DisplayBuffer) {
+pub fn draw_triangle_usize(
+    p1: Vector2<usize>,
+    p2: Vector2<usize>,
+    p3: Vector2<usize>,
+    color: Color,
+    buffer: &mut DisplayBuffer,
+) {
     let ordered = order_by_y(p1, p2, p3);
     let p1 = ordered[2];
     let p2 = ordered[1];
     let p3 = ordered[0];
 
     if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
-       p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height {
+        p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
+    {
         return;
     }
 
@@ -153,7 +160,7 @@ mod test {
     #[test]
     fn test_draw_line_usize() {
         // crashes for some reason
-        let p1: Vector2<usize> = Vector2::new(0,    767);
+        let p1: Vector2<usize> = Vector2::new(0, 767);
         let p2: Vector2<usize> = Vector2::new(1023, 767);
         let mut db = DisplayBuffer::new(1024, 768, 4);
         let color = Color {
