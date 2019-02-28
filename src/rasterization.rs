@@ -1,6 +1,12 @@
 use core::{Color, DisplayBuffer};
 use na::Vector2;
 
+/// Draw a colored line segment between two points
+///
+/// * `p1` - End point of the line segment
+/// * `p2` - End point of the line segment
+/// * `color` - Color of the line
+/// * `buffer` - Display buffer (render target)
 pub fn draw_line_f32(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &mut DisplayBuffer) {
 
     let threshold = 1.0;
@@ -20,6 +26,12 @@ pub fn draw_line_f32(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &
     }
 }
 
+/// Draw a colored line segment between two points
+///
+/// * `p1` - End point of the line segment
+/// * `p2` - End point of the line segment
+/// * `color` - Color of the line
+/// * `buffer` - Display buffer (render target)
 pub fn draw_line_usize(
     p1: Vector2<usize>,
     p2: Vector2<usize>,
@@ -62,13 +74,25 @@ pub fn draw_line_usize(
     }
 }
 
+/// Order the points of a triangle based on the y-coordinate
+///
+/// * `p1` - Vertex of a triangle
+/// * `p2` - Vertex of a triangle
+/// * `p3` - Vertex of a triangle
+/// * return Triangle whose vertices are ordered by the y-coordinate
 fn order_by_y(p1: Vector2<usize>, p2: Vector2<usize>, p3: Vector2<usize>) -> [Vector2<usize>; 3] {
     let mut inputs = [p1, p2, p3];
     inputs.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
     inputs
 }
 
-// p1 is the top vertex
+/// Draw a filled bottom-flat triangle
+///
+/// * `p1` - Top vertex of a triangle
+/// * `p2` - Bottom vertex of a triangle
+/// * `p3` - Bottom vertex of a triangle
+/// * `color` - Color of the triangle
+/// * `buffer` - Display buffer (render target)
 fn fill_bottom_flat_triangle(
     p1: Vector2<usize>,
     p2: Vector2<usize>,
@@ -92,7 +116,13 @@ fn fill_bottom_flat_triangle(
     }
 }
 
-// p3 is the bottom vertex
+/// Draw a filled top-flat triangle
+///
+/// * `p1` - Top vertex of a triangle
+/// * `p2` - Top vertex of a triangle
+/// * `p3` - Bottom vertex of a triangle
+/// * `color` - Color of the triangle
+/// * `buffer` - Display buffer (render target)
 fn fill_top_flat_triangle(
     p1: Vector2<usize>,
     p2: Vector2<usize>,
@@ -115,6 +145,14 @@ fn fill_top_flat_triangle(
         curr_x_2 -= inv_slope_2;
     }
 }
+
+/// Draw a filled triangle
+///
+/// * `p1` - A vertex of a triangle
+/// * `p2` - A vertex of a triangle
+/// * `p3` - A vertex of a triangle
+/// * `color` - Color of the triangle
+/// * `buffer` - Display buffer (render target)
 pub fn draw_triangle_usize(
     p1: Vector2<usize>,
     p2: Vector2<usize>,
