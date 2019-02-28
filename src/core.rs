@@ -8,9 +8,53 @@
 // 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
-use rasterization;
-
 use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
+
+/// Renderable represents any model that can be drawn to a display buffer
+pub trait Renderable {
+    /// Draw the model to a display buffer (render target)
+    ///
+    /// * `color` - Color to use
+    /// * `buffer` - Display buffer (render target)
+    fn render(&self, color: Color, buffer: &mut DisplayBuffer);
+}
+
+pub struct Triangle<T> {
+    /// Vertex of a triangle
+    pub v0: T,
+    /// Vertex of a triangle
+    pub v1: T,
+    /// Vertex of a triangle
+    pub v2: T,
+}
+
+pub struct LineSegment<T> {
+    /// End point of line segment
+    pub v0: T,
+    /// End point of line segment
+    pub v1: T,
+}
+
+impl Triangle<Vector2<usize>> {
+    /// Order the points of a triangle based on the y-coordinate
+    pub fn order_by_y(&mut self) {
+        let mut ordered = [self.v0, self.v1, self.v2];
+        ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+        self.v0 = ordered[2];
+        self.v1 = ordered[1];
+        self.v2 = ordered[0];
+    }
+
+    /// Return true if the triangle is top-flat
+    pub fn is_top_flat(&self) -> bool {
+        self.v0.y == self.v1.y
+    }
+
+    /// Return true if the triangle is bottom-flat
+    pub fn is_bottom_flat(&self) -> bool {
+        self.v1.y == self.v2.y
+    }
+}
 
 /// Transforms a single vertex from model space to viewport
 ///
@@ -20,7 +64,7 @@ use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
 /// * `m` - A transformation matrix
 /// * `vp_width` - Width of the viewport
 /// * `vp_height` - Height of the viewport
-///
+/// * return - Transformed vertex
 fn transform_vertex(
     v: Vector4<f32>,
     m: Matrix4<f32>,
@@ -268,26 +312,28 @@ impl Mesh {
                 a: (255 / 4 + 3 * 255 / 4 * i / self.poly_indices.len()) as u8,
             };
 
-            let p1 = transform_vertex(
-                self.vertices[p[0] as usize],
-                xform,
-                buffer.width as f32,
-                buffer.height as f32,
-            );
-            let p2 = transform_vertex(
-                self.vertices[p[1] as usize],
-                xform,
-                buffer.width as f32,
-                buffer.height as f32,
-            );
-            let p3 = transform_vertex(
-                self.vertices[p[2] as usize],
-                xform,
-                buffer.width as f32,
-                buffer.height as f32,
-            );
-
-            rasterization::draw_triangle_usize(p1, p2, p3, color, buffer);
+            let mut triangle = Triangle {
+                v0: transform_vertex(
+                    self.vertices[p[0] as usize],
+                    xform,
+                    buffer.width as f32,
+                    buffer.height as f32,
+                ),
+                v1: transform_vertex(
+                    self.vertices[p[1] as usize],
+                    xform,
+                    buffer.width as f32,
+                    buffer.height as f32,
+                ),
+                v2:  transform_vertex(
+                    self.vertices[p[2] as usize],
+                    xform,
+                    buffer.width as f32,
+                    buffer.height as f32,
+                ),
+            };
+            triangle.order_by_y();
+            triangle.render(color, buffer);
 
             // wireframe rendering
             // rasterization::draw_line_usize(p1, p2, color, buffer);

@@ -1,115 +1,134 @@
-use core::{Color, DisplayBuffer};
+use core::{Color, DisplayBuffer, Renderable, Triangle, LineSegment};
 use na::Vector2;
 
-/// Draw a colored line segment between two points
-///
-/// * `p1` - End point of the line segment
-/// * `p2` - End point of the line segment
-/// * `color` - Color of the line
-/// * `buffer` - Display buffer (render target)
-pub fn draw_line_f32(p1: Vector2<f32>, p2: Vector2<f32>, color: Color, buffer: &mut DisplayBuffer) {
+impl Renderable for Triangle<Vector2<usize>> {
+    /// Draw a color-filled triangle
+    fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
+        let p1 = self.v0;
+        let p2 = self.v1;
+        let p3 = self.v2;
 
-    let threshold = 1.0;
-    let sub = p2 - p1;
-    let dist = (sub.x + sub.y).abs().sqrt();
-
-    if dist > threshold {
-        let middle = p1 + sub / 2.0;
-        if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
-            (middle.y >= 0.0 && middle.y <= buffer.height as f32)
+        if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
+            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
         {
-            buffer.set_pixel(middle.x as usize, middle.y as usize, color);
+            return;
+        }
 
-            draw_line_f32(p1, middle, color, buffer);
-            draw_line_f32(middle, p2, color, buffer);
+        if self.is_top_flat(){
+            fill_top_flat_triangle(self, color, buffer);
+        } else if self.is_bottom_flat() {
+            fill_bottom_flat_triangle(self, color, buffer);
+        } else {
+            let pf1: Vector2<f32> = Vector2::new(p1.x as f32, p1.y as f32);
+            let pf2: Vector2<f32> = Vector2::new(p2.x as f32, p2.y as f32);
+            let pf3: Vector2<f32> = Vector2::new(p3.x as f32, p3.y as f32);
+
+            // split the triangle into two: a bottom flat one and a top flat one
+            let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
+            let p4: Vector2<usize> = Vector2::new(x4, p2.y);
+
+            let bottom_flat = Triangle {v0: p1, v1: p2, v2: p4};
+            let top_flat = Triangle {v0: p2, v1: p4, v2: p3};
+
+            fill_bottom_flat_triangle(&bottom_flat, color, buffer);
+            fill_top_flat_triangle(&top_flat, color, buffer);
         }
     }
 }
 
-/// Draw a colored line segment between two points
-///
-/// * `p1` - End point of the line segment
-/// * `p2` - End point of the line segment
-/// * `color` - Color of the line
-/// * `buffer` - Display buffer (render target)
-pub fn draw_line_usize(
-    p1: Vector2<usize>,
-    p2: Vector2<usize>,
-    color: Color,
-    buffer: &mut DisplayBuffer,
-) {
-    if p1.x >= buffer.width || p1.y >= buffer.height {
-        return;
-    }
-    if p2.x >= buffer.width || p2.y >= buffer.height {
-        return;
-    }
-
-    let mut x = p1.x as i32;
-    let mut y = p1.y as i32;
-    let x2 = p2.x as i32;
-    let y2 = p2.y as i32;
-    let dx = (x2 - x).abs();
-    let dy = (y2 - y).abs();
-    let sx = if x < x2 { 1 } else { -1 };
-    let sy = if y < y2 { 1 } else { -1 };
-    let mut err: i32 = dx - dy;
-
-    loop {
-        buffer.set_pixel(x as usize, y as usize, color);
-
-        if x == x2 && y == y2 {
-            break;
+impl Renderable for LineSegment<Vector2<usize>> {
+    /// Draw a colored line segment between two points
+    fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
+        if self.v0.x >= buffer.width || self.v0.y >= buffer.height {
+            return;
+        }
+        if self.v1.x >= buffer.width || self.v1.y >= buffer.height {
+            return;
         }
 
-        let e2 = 2 * err;
-        if e2 > -dy {
-            err -= dy;
-            x += sx
-        }
-        if e2 < dx {
-            err += dx;
-            y += sy
+        let mut x = self.v0.x as i32;
+        let mut y = self.v0.y as i32;
+        let x2 = self.v1.x as i32;
+        let y2 = self.v1.y as i32;
+        let dx = (x2 - x).abs();
+        let dy = (y2 - y).abs();
+        let sx = if x < x2 { 1 } else { -1 };
+        let sy = if y < y2 { 1 } else { -1 };
+        let mut err: i32 = dx - dy;
+
+        loop {
+            buffer.set_pixel(x as usize, y as usize, color);
+
+            if x == x2 && y == y2 {
+                break;
+            }
+
+            let e2 = 2 * err;
+            if e2 > -dy {
+                err -= dy;
+                x += sx
+            }
+            if e2 < dx {
+                err += dx;
+                y += sy
+            }
         }
     }
 }
 
-/// Order the points of a triangle based on the y-coordinate
-///
-/// * `p1` - Vertex of a triangle
-/// * `p2` - Vertex of a triangle
-/// * `p3` - Vertex of a triangle
-/// * return Triangle whose vertices are ordered by the y-coordinate
-fn order_by_y(p1: Vector2<usize>, p2: Vector2<usize>, p3: Vector2<usize>) -> [Vector2<usize>; 3] {
-    let mut inputs = [p1, p2, p3];
-    inputs.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
-    inputs
+impl Renderable for LineSegment<Vector2<f32>> {
+    /// Draw a colored line segment between two points
+    fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
+        let threshold = 1.0;
+        let sub = self.v1 - self.v0;
+        let dist = (sub.x + sub.y).abs().sqrt();
+
+        if dist > threshold {
+            let middle = self.v0 + sub / 2.0;
+            if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
+                (middle.y >= 0.0 && middle.y <= buffer.height as f32)
+            {
+                buffer.set_pixel(middle.x as usize, middle.y as usize, color);
+
+                let first = LineSegment {v0 : self.v0, v1 : middle};
+                let second = LineSegment {v0 : middle, v1: self.v1};
+
+                first.render(color, buffer);
+                second.render(color, buffer);
+            }
+        }
+    }
 }
 
 /// Draw a filled bottom-flat triangle
 ///
-/// * `p1` - Top vertex of a triangle
-/// * `p2` - Bottom vertex of a triangle
-/// * `p3` - Bottom vertex of a triangle
+/// * `triangle` - Triangle to fill
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_bottom_flat_triangle(
-    p1: Vector2<usize>,
-    p2: Vector2<usize>,
-    p3: Vector2<usize>,
+    triangle: &Triangle<Vector2<usize>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
-    let inv_slope_1 = (p1.x as f32 - p2.x as f32) / (p2.y as f32 - p1.y as f32);
-    let inv_slope_2 = (p1.x as f32 - p3.x as f32) / (p2.y as f32 - p1.y as f32);
+    let v0 = triangle.v0;
+    let v1 = triangle.v1;
+    let v2 = triangle.v2;
+    let inv_slope_1 = (v0.x as f32 - v1.x as f32) / (v1.y as f32 - v0.y as f32);
+    let inv_slope_2 = (v0.x as f32 - v2.x as f32) / (v1.y as f32 - v0.y as f32);
 
-    let mut curr_x_1: f32 = p1.x as f32;
-    let mut curr_x_2: f32 = p1.x as f32;
+    let mut curr_x_1: f32 = v0.x as f32;
+    let mut curr_x_2: f32 = v0.x as f32;
 
-    for y in (p2.y..p1.y + 1).rev() {
+    for y in (v1.y..v0.y + 1).rev() {
         let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
         let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
-        draw_line_usize(scan_line_start, scan_line_end, color, buffer);
+
+        let scan_line = LineSegment {
+            v0: scan_line_start,
+            v1: scan_line_end
+        };
+
+        scan_line.render(color, buffer);
 
         curr_x_1 += inv_slope_1;
         curr_x_2 += inv_slope_2;
@@ -118,113 +137,35 @@ fn fill_bottom_flat_triangle(
 
 /// Draw a filled top-flat triangle
 ///
-/// * `p1` - Top vertex of a triangle
-/// * `p2` - Top vertex of a triangle
-/// * `p3` - Bottom vertex of a triangle
+/// * `triangle` - Triangle to fill
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_top_flat_triangle(
-    p1: Vector2<usize>,
-    p2: Vector2<usize>,
-    p3: Vector2<usize>,
+    triangle: &Triangle<Vector2<usize>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
-    let inv_slope_1 = (p1.x as f32 - p3.x as f32) / (p3.y as f32 - p1.y as f32);
-    let inv_slope_2 = (p2.x as f32 - p3.x as f32) / (p3.y as f32 - p2.y as f32);
+    let v0 = triangle.v0;
+    let v1 = triangle.v1;
+    let v2 = triangle.v2;
+    let inv_slope_1 = (v0.x as f32 - v2.x as f32) / (v2.y as f32 - v0.y as f32);
+    let inv_slope_2 = (v1.x as f32 - v2.x as f32) / (v2.y as f32 - v1.y as f32);
 
-    let mut curr_x_1 = p3.x as f32;
-    let mut curr_x_2 = p3.x as f32;
+    let mut curr_x_1 = v2.x as f32;
+    let mut curr_x_2 = v2.x as f32;
 
-    for y in p3.y..p1.y + 1 {
+    for y in v2.y..v0.y + 1 {
         let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
         let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
-        draw_line_usize(scan_line_start, scan_line_end, color, buffer);
+
+        let scan_line = LineSegment {
+            v0: scan_line_start,
+            v1: scan_line_end
+        };
+
+        scan_line.render(color, buffer);
 
         curr_x_1 -= inv_slope_1;
         curr_x_2 -= inv_slope_2;
-    }
-}
-
-/// Draw a filled triangle
-///
-/// * `p1` - A vertex of a triangle
-/// * `p2` - A vertex of a triangle
-/// * `p3` - A vertex of a triangle
-/// * `color` - Color of the triangle
-/// * `buffer` - Display buffer (render target)
-pub fn draw_triangle_usize(
-    p1: Vector2<usize>,
-    p2: Vector2<usize>,
-    p3: Vector2<usize>,
-    color: Color,
-    buffer: &mut DisplayBuffer,
-) {
-    let ordered = order_by_y(p1, p2, p3);
-    let p1 = ordered[2];
-    let p2 = ordered[1];
-    let p3 = ordered[0];
-
-    if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
-        p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
-    {
-        return;
-    }
-
-    if ordered[1].y == ordered[2].y {
-        fill_top_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
-    } else if ordered[0].y == ordered[1].y {
-        fill_bottom_flat_triangle(ordered[2], ordered[1], ordered[0], color, buffer);
-    } else {
-        let pf1: Vector2<f32> = Vector2::new(p1.x as f32, p1.y as f32);
-        let pf2: Vector2<f32> = Vector2::new(p2.x as f32, p2.y as f32);
-        let pf3: Vector2<f32> = Vector2::new(p3.x as f32, p3.y as f32);
-
-        // split the triangle into two: a bottom flat one and a top flat one
-        let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
-        let p4: Vector2<usize> = Vector2::new(x4, p2.y);
-        fill_bottom_flat_triangle(p1, p2, p4, color, buffer);
-        fill_top_flat_triangle(p2, p4, p3, color, buffer);
-    }
-}
-
-#[cfg(test)]
-mod test {
-    extern crate core;
-    extern crate nalgebra as na;
-
-    use core::{Color, DisplayBuffer};
-    use na::Vector2;
-    #[test]
-    fn test_draw_line_usize() {
-        // crashes for some reason
-        let p1: Vector2<usize> = Vector2::new(0, 767);
-        let p2: Vector2<usize> = Vector2::new(1023, 767);
-        let mut db = DisplayBuffer::new(1024, 768, 4);
-        let color = Color {
-            r: 1,
-            g: 2,
-            b: 3,
-            a: 4,
-        };
-
-        super::draw_line_usize(p1, p2, color, &mut db);
-
-        assert_eq!(db.data[0], 1);
-        assert_eq!(db.data[1], 2);
-        assert_eq!(db.data[2], 3);
-        assert_eq!(db.data[3], 4);
-    }
-
-    #[test]
-    fn test_draw_triangle() {
-        let p1 = Vector2::new(1, 1);
-        let p2 = Vector2::new(1, 2);
-        let p3 = Vector2::new(1, 3);
-
-        let result = super::order_by_y(p2, p3, p1);
-        assert!(result[0].y == 1);
-        assert!(result[1].y == 2);
-        assert!(result[2].y == 3);
     }
 }
