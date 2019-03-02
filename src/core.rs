@@ -20,11 +20,11 @@ pub trait Renderable {
 }
 
 pub struct Triangle<T> {
-    /// Vertex of a triangle
+    /// Vertex of a triangle (largest y-coordinate)
     pub v0: T,
     /// Vertex of a triangle
     pub v1: T,
-    /// Vertex of a triangle
+    /// Vertex of a triangle (smallest y-coordinate)
     pub v2: T,
 }
 
@@ -36,7 +36,8 @@ pub struct LineSegment<T> {
 }
 
 impl Triangle<Vector2<usize>> {
-    /// Order the points of a triangle based on the y-coordinate
+    /// Order the points of a triangle based on the y-coordinate such that v0
+    /// has the largest y-coordinate and v2 the smallest
     pub fn order_by_y(&mut self) {
         let mut ordered = [self.v0, self.v1, self.v2];
         ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
@@ -173,7 +174,7 @@ pub struct Color {
     pub g: u8,
     /// Blue component intensity
     pub b: u8,
-    /// Alpha value
+    /// Alpha value (0 - fully transparent, 255 - fully opaque)
     pub a: u8,
 }
 
