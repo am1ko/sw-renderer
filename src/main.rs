@@ -1,12 +1,12 @@
-extern crate sfml;
 extern crate nalgebra as na;
 extern crate renderer;
+extern crate sfml;
 
-use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
-use sfml::window::{Event, Key, Style, VideoMode};
-use sfml::system::Clock;
 use na::{Vector3, Vector4};
 use renderer::*;
+use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
+use sfml::system::Clock;
+use sfml::window::{Event, Key, Style, VideoMode};
 
 const FPS: f32 = 60.0;
 const WIN_WIDTH: usize = 1024;
@@ -33,9 +33,8 @@ fn main() {
         Vector4::new(-1.0, -1.0, -1.0, 1.0),
     ]);
 
-    cube.poly_sizes.append(
-        &mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-    );
+    cube.poly_sizes
+        .append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
     cube.poly_indices.append(&mut vec![
         [0, 1, 2],
         [1, 2, 3],
@@ -67,49 +66,63 @@ fn main() {
             };
 
             match event {
-                Event::Closed |
-                Event::KeyPressed { code: Key::Q, .. } |
-                Event::KeyPressed { code: Key::Escape, .. } => return,
-                Event::KeyPressed { code: Key::D, .. } |
-                Event::KeyPressed { code: Key::Right, .. } |
-                Event::KeyPressed { code: Key::L, .. } => {
+                Event::Closed
+                | Event::KeyPressed { code: Key::Q, .. }
+                | Event::KeyPressed {
+                    code: Key::Escape, ..
+                } => return,
+                Event::KeyPressed { code: Key::D, .. }
+                | Event::KeyPressed {
+                    code: Key::Right, ..
+                }
+                | Event::KeyPressed { code: Key::L, .. } => {
                     vel.x = 1.0;
                 }
-                Event::KeyReleased { code: Key::D, .. } |
-                Event::KeyReleased { code: Key::Right, .. } |
-                Event::KeyReleased { code: Key::L, .. } => {
+                Event::KeyReleased { code: Key::D, .. }
+                | Event::KeyReleased {
+                    code: Key::Right, ..
+                }
+                | Event::KeyReleased { code: Key::L, .. } => {
                     vel.x = 0.0;
                 }
-                Event::KeyPressed { code: Key::A, .. } |
-                Event::KeyPressed { code: Key::Left, .. } |
-                Event::KeyPressed { code: Key::H, .. } => {
+                Event::KeyPressed { code: Key::A, .. }
+                | Event::KeyPressed {
+                    code: Key::Left, ..
+                }
+                | Event::KeyPressed { code: Key::H, .. } => {
                     vel.x = -1.0;
                 }
 
-                Event::KeyReleased { code: Key::A, .. } |
-                Event::KeyReleased { code: Key::Left, .. } |
-                Event::KeyReleased { code: Key::H, .. } => {
+                Event::KeyReleased { code: Key::A, .. }
+                | Event::KeyReleased {
+                    code: Key::Left, ..
+                }
+                | Event::KeyReleased { code: Key::H, .. } => {
                     vel.x = 0.0;
                 }
 
-                Event::KeyPressed { code: Key::W, .. } |
-                Event::KeyPressed { code: Key::Up, .. } |
-                Event::KeyPressed { code: Key::K, .. } => {
+                Event::KeyPressed { code: Key::W, .. }
+                | Event::KeyPressed { code: Key::Up, .. }
+                | Event::KeyPressed { code: Key::K, .. } => {
                     vel.z = -1.0;
                 }
-                Event::KeyReleased { code: Key::W, .. } |
-                Event::KeyReleased { code: Key::Up, .. } |
-                Event::KeyReleased { code: Key::K, .. } => {
+                Event::KeyReleased { code: Key::W, .. }
+                | Event::KeyReleased { code: Key::Up, .. }
+                | Event::KeyReleased { code: Key::K, .. } => {
                     vel.z = 0.0;
                 }
-                Event::KeyPressed { code: Key::S, .. } |
-                Event::KeyPressed { code: Key::Down, .. } |
-                Event::KeyPressed { code: Key::J, .. } => {
+                Event::KeyPressed { code: Key::S, .. }
+                | Event::KeyPressed {
+                    code: Key::Down, ..
+                }
+                | Event::KeyPressed { code: Key::J, .. } => {
                     vel.z = 1.0;
                 }
-                Event::KeyReleased { code: Key::S, .. } |
-                Event::KeyReleased { code: Key::Down, .. } |
-                Event::KeyReleased { code: Key::J, .. } => {
+                Event::KeyReleased { code: Key::S, .. }
+                | Event::KeyReleased {
+                    code: Key::Down, ..
+                }
+                | Event::KeyReleased { code: Key::J, .. } => {
                     vel.z = 0.0;
                 }
                 Event::KeyPressed { code: Key::R, .. } => {}

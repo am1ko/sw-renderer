@@ -1,4 +1,4 @@
-use core::{Color, DisplayBuffer, Renderable, Triangle, LineSegment};
+use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
 use na::Vector2;
 
 impl Renderable for Triangle<Vector2<usize>> {
@@ -8,13 +8,17 @@ impl Renderable for Triangle<Vector2<usize>> {
         let p2 = self.v1;
         let p3 = self.v2;
 
-        if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
-            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
+        if p1.x >= buffer.width
+            || p1.y >= buffer.height
+            || p2.x >= buffer.width
+            || p2.y >= buffer.height
+            || p3.x >= buffer.width
+            || p3.y >= buffer.height
         {
             return;
         }
 
-        if self.is_top_flat(){
+        if self.is_top_flat() {
             fill_top_flat_triangle(self, color, buffer);
         } else if self.is_bottom_flat() {
             fill_bottom_flat_triangle(self, color, buffer);
@@ -27,8 +31,16 @@ impl Renderable for Triangle<Vector2<usize>> {
             let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
             let p4: Vector2<usize> = Vector2::new(x4, p2.y);
 
-            let bottom_flat = Triangle {v0: p1, v1: p2, v2: p4};
-            let top_flat = Triangle {v0: p2, v1: p4, v2: p3};
+            let bottom_flat = Triangle {
+                v0: p1,
+                v1: p2,
+                v2: p4,
+            };
+            let top_flat = Triangle {
+                v0: p2,
+                v1: p4,
+                v2: p3,
+            };
 
             fill_bottom_flat_triangle(&bottom_flat, color, buffer);
             fill_top_flat_triangle(&top_flat, color, buffer);
@@ -85,13 +97,19 @@ impl Renderable for LineSegment<Vector2<f32>> {
 
         if dist > threshold {
             let middle = self.v0 + sub / 2.0;
-            if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
-                (middle.y >= 0.0 && middle.y <= buffer.height as f32)
+            if (middle.x >= 0.0 && middle.x <= buffer.width as f32)
+                && (middle.y >= 0.0 && middle.y <= buffer.height as f32)
             {
                 buffer.set_pixel(middle.x as usize, middle.y as usize, color);
 
-                let first = LineSegment {v0 : self.v0, v1 : middle};
-                let second = LineSegment {v0 : middle, v1: self.v1};
+                let first = LineSegment {
+                    v0: self.v0,
+                    v1: middle,
+                };
+                let second = LineSegment {
+                    v0: middle,
+                    v1: self.v1,
+                };
 
                 first.render(color, buffer);
                 second.render(color, buffer);
@@ -125,7 +143,7 @@ fn fill_bottom_flat_triangle(
 
         let scan_line = LineSegment {
             v0: scan_line_start,
-            v1: scan_line_end
+            v1: scan_line_end,
         };
 
         scan_line.render(color, buffer);
@@ -160,7 +178,7 @@ fn fill_top_flat_triangle(
 
         let scan_line = LineSegment {
             v0: scan_line_start,
-            v1: scan_line_end
+            v1: scan_line_end,
         };
 
         scan_line.render(color, buffer);

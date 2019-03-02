@@ -8,7 +8,7 @@
 // 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
-use na::{Vector2, Vector3, Vector4, Matrix3x4, Matrix4, RowVector4};
+use na::{Matrix3x4, Matrix4, RowVector4, Vector2, Vector3, Vector4};
 
 /// Renderable represents any model that can be drawn to a display buffer
 pub trait Renderable {
@@ -102,15 +102,12 @@ fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f3
     let b = -size / aspect_ratio;
     let t = size / aspect_ratio;
 
-    return Matrix4::from_rows(
-        &[
-            RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
-            RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
-            RowVector4::new(0.0, 0.0, -(f + n) / (f - n), -(2.0 * f * n) / (f - n)),
-            RowVector4::new(0.0, 0.0, -1.0, 0.0),
-        ],
-    );
-
+    return Matrix4::from_rows(&[
+        RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
+        RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
+        RowVector4::new(0.0, 0.0, -(f + n) / (f - n), -(2.0 * f * n) / (f - n)),
+        RowVector4::new(0.0, 0.0, -1.0, 0.0),
+    ]);
 }
 
 fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
@@ -120,13 +117,11 @@ fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) 
 
     // We do not care about the w-component. Lets get rid of it since cross product is not
     // defined for 4D vectors
-    let reduce_dim = Matrix3x4::from_rows(
-        &[
-            RowVector4::new(1.0, 0.0, 0.0, 0.0),
-            RowVector4::new(0.0, 1.0, 0.0, 0.0),
-            RowVector4::new(0.0, 0.0, 1.0, 0.0),
-        ],
-    );
+    let reduce_dim = Matrix3x4::from_rows(&[
+        RowVector4::new(1.0, 0.0, 0.0, 0.0),
+        RowVector4::new(0.0, 1.0, 0.0, 0.0),
+        RowVector4::new(0.0, 0.0, 1.0, 0.0),
+    ]);
     let eye = reduce_dim * eye;
     let lookat = reduce_dim * lookat;
     let up = reduce_dim * up;
@@ -141,25 +136,21 @@ fn build_view_matrix(eye: Vector4<f32>, lookat: Vector4<f32>, up: Vector4<f32>) 
 
     // This is an orientation matrix that is transposed. Transpose effectively performs
     // inversion. This achieves the effect that the world rotates around the camera
-    let rotation = Matrix4::from_rows(
-        &[
-            RowVector4::new(x.x, x.y, x.z, 0.0),
-            RowVector4::new(y.x, y.y, y.z, 0.0),
-            RowVector4::new(z.x, z.y, z.z, 0.0),
-            RowVector4::new(0.0, 0.0, 0.0, 1.0),
-        ],
-    );
+    let rotation = Matrix4::from_rows(&[
+        RowVector4::new(x.x, x.y, x.z, 0.0),
+        RowVector4::new(y.x, y.y, y.z, 0.0),
+        RowVector4::new(z.x, z.y, z.z, 0.0),
+        RowVector4::new(0.0, 0.0, 0.0, 1.0),
+    ]);
 
     // Translate to the inverse of the eye position (the world moves in the opposite direction
     // around the camera that is fixed)
-    let translation = Matrix4::from_rows(
-        &[
-            RowVector4::new(1.0, 0.0, 0.0, -eye.x),
-            RowVector4::new(0.0, 1.0, 0.0, -eye.y),
-            RowVector4::new(0.0, 0.0, 1.0, -eye.z),
-            RowVector4::new(0.0, 0.0, 0.0, 1.0),
-        ],
-    );
+    let translation = Matrix4::from_rows(&[
+        RowVector4::new(1.0, 0.0, 0.0, -eye.x),
+        RowVector4::new(0.0, 1.0, 0.0, -eye.y),
+        RowVector4::new(0.0, 0.0, 1.0, -eye.z),
+        RowVector4::new(0.0, 0.0, 0.0, 1.0),
+    ]);
 
     // Use inverse multiplication order to produce inversed combined matrix
     return rotation * translation;
@@ -263,39 +254,31 @@ impl Mesh {
     /// * `eye` - Position of the camera eye
     /// * `buffer` - Display buffer (render target)
     pub fn render(self: &Mesh, eye: Vector4<f32>, buffer: &mut DisplayBuffer) {
-        let m_rot_x = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                RowVector4::new(0.0, self.angle.x.cos(), self.angle.x.sin(), 0.0),
-                RowVector4::new(0.0, -self.angle.x.sin(), self.angle.x.cos(), 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
-        let m_rot_y = Matrix4::from_rows(
-            &[
-                RowVector4::new(self.angle.y.cos(), 0.0, -self.angle.y.sin(), 0.0),
-                RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                RowVector4::new(self.angle.y.sin(), 0.0, self.angle.y.cos(), 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
-        let m_rot_z = Matrix4::from_rows(
-            &[
-                RowVector4::new(self.angle.z.cos(), -self.angle.z.sin(), 0.0, 0.0),
-                RowVector4::new(self.angle.z.sin(), self.angle.z.cos(), 0.0, 0.0),
-                RowVector4::new(0.0, 0.0, 1.0, 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+        let m_rot_x = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, 0.0),
+            RowVector4::new(0.0, self.angle.x.cos(), self.angle.x.sin(), 0.0),
+            RowVector4::new(0.0, -self.angle.x.sin(), self.angle.x.cos(), 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
+        let m_rot_y = Matrix4::from_rows(&[
+            RowVector4::new(self.angle.y.cos(), 0.0, -self.angle.y.sin(), 0.0),
+            RowVector4::new(0.0, 1.0, 0.0, 0.0),
+            RowVector4::new(self.angle.y.sin(), 0.0, self.angle.y.cos(), 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
+        let m_rot_z = Matrix4::from_rows(&[
+            RowVector4::new(self.angle.z.cos(), -self.angle.z.sin(), 0.0, 0.0),
+            RowVector4::new(self.angle.z.sin(), self.angle.z.cos(), 0.0, 0.0),
+            RowVector4::new(0.0, 0.0, 1.0, 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
 
-        let m_trans = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, self.position.x),
-                RowVector4::new(0.0, 1.0, 0.0, self.position.y),
-                RowVector4::new(0.0, 0.0, 1.0, self.position.z),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+        let m_trans = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, self.position.x),
+            RowVector4::new(0.0, 1.0, 0.0, self.position.y),
+            RowVector4::new(0.0, 0.0, 1.0, self.position.z),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let aspect_ratio = (buffer.width as f32) / (buffer.height as f32);
@@ -326,7 +309,7 @@ impl Mesh {
                     buffer.width as f32,
                     buffer.height as f32,
                 ),
-                v2:  transform_vertex(
+                v2: transform_vertex(
                     self.vertices[p[2] as usize],
                     xform,
                     buffer.width as f32,
@@ -349,14 +332,12 @@ impl Mesh {
     ///
     /// * `translation` - Vector that specifies the desired displacement
     pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
-        let xform = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, translation.x),
-                RowVector4::new(0.0, 1.0, 0.0, translation.y),
-                RowVector4::new(0.0, 0.0, 1.0, translation.z),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+        let xform = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, translation.x),
+            RowVector4::new(0.0, 1.0, 0.0, translation.y),
+            RowVector4::new(0.0, 0.0, 1.0, translation.z),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
         self.position = xform * self.position;
     }
 
