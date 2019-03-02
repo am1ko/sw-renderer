@@ -226,25 +226,36 @@ pub struct Mesh {
     /// Individual vertices that make up the surface of the mesh. Each vertex is
     /// a 4D vector [x, y, z, w]
     pub vertices: Vec<Vector4<f32>>,
-    /// Size of each polygon in vertices
-    pub poly_sizes: Vec<i32>,
     /// Specifies which vertices make a single polygon.
     pub poly_indices: Vec<[i32; 3]>,
     /// World position of the center of the mesh
     pub position: Vector4<f32>,
     /// Rotation of the mesh around all 3 axis vectors
     pub angle: Vector3<f32>,
+    /// Triangles that make up the mesh surface
+    pub triangles: Vec<Triangle<Vector4<f32>>>,
 }
 
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
             vertices: Vec::new(),
-            poly_sizes: Vec::new(),
             poly_indices: Vec::new(),
             position: Vector4::new(0.0, 0.0, 0.0, 1.0),
             angle: Vector3::new(0.0, 0.0, 0.0),
+            triangles: Vec::new(),
         };
+    }
+
+    /// Builds triangles out of the vertices of the mesh
+    pub fn to_triangles(self: &mut Mesh) {
+        for p in self.poly_indices.iter() {
+            self.triangles.push(Triangle {
+                v0: self.vertices[p[0] as usize],
+                v1: self.vertices[p[1] as usize],
+                v2: self.vertices[p[2] as usize],
+            });
+        }
     }
 
     /// Render a mesh into a display buffer
@@ -288,7 +299,7 @@ impl Mesh {
         let xform = projection * view * model;
 
         // loop through all polygons, each consists of 3 vertices
-        for (i, p) in self.poly_indices.iter().enumerate() {
+        for (i, t) in self.triangles.iter().enumerate() {
             let color = Color {
                 r: 0,
                 g: 255,
@@ -297,24 +308,9 @@ impl Mesh {
             };
 
             let mut triangle = Triangle {
-                v0: transform_vertex(
-                    self.vertices[p[0] as usize],
-                    xform,
-                    buffer.width as f32,
-                    buffer.height as f32,
-                ),
-                v1: transform_vertex(
-                    self.vertices[p[1] as usize],
-                    xform,
-                    buffer.width as f32,
-                    buffer.height as f32,
-                ),
-                v2: transform_vertex(
-                    self.vertices[p[2] as usize],
-                    xform,
-                    buffer.width as f32,
-                    buffer.height as f32,
-                ),
+                v0: transform_vertex(t.v0, xform, buffer.width as f32, buffer.height as f32),
+                v1: transform_vertex(t.v1, xform, buffer.width as f32, buffer.height as f32),
+                v2: transform_vertex(t.v2, xform, buffer.width as f32, buffer.height as f32),
             };
             triangle.order_by_y();
             triangle.render(color, buffer);

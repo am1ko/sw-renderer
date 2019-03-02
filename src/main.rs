@@ -33,8 +33,6 @@ fn main() {
         Vector4::new(-1.0, -1.0, -1.0, 1.0),
     ]);
 
-    cube.poly_sizes
-        .append(&mut vec![3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
     cube.poly_indices.append(&mut vec![
         [0, 1, 2],
         [1, 2, 3],
@@ -49,6 +47,7 @@ fn main() {
         [4, 5, 6],
         [4, 6, 7],
     ]);
+    cube.to_triangles();
 
     cube.translate(Vector3::new(0.0, 0.0, -3.0));
 
