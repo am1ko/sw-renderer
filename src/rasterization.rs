@@ -8,12 +8,8 @@ impl Renderable for Triangle<Vector2<usize>> {
         let p2 = self.v1;
         let p3 = self.v2;
 
-        if p1.x >= buffer.width
-            || p1.y >= buffer.height
-            || p2.x >= buffer.width
-            || p2.y >= buffer.height
-            || p3.x >= buffer.width
-            || p3.y >= buffer.height
+        if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
+            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
         {
             return;
         }
@@ -97,8 +93,8 @@ impl Renderable for LineSegment<Vector2<f32>> {
 
         if dist > threshold {
             let middle = self.v0 + sub / 2.0;
-            if (middle.x >= 0.0 && middle.x <= buffer.width as f32)
-                && (middle.y >= 0.0 && middle.y <= buffer.height as f32)
+            if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
+                (middle.y >= 0.0 && middle.y <= buffer.height as f32)
             {
                 buffer.set_pixel(middle.x as usize, middle.y as usize, color);
 
