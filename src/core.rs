@@ -97,22 +97,10 @@ fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f3
     );
 }
 
-fn build_view_matrix(eye: Vector3<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
+fn build_view_matrix(eye: Vector3<f32>, lookat: Vector3<f32>, up: Vector3<f32>) -> Matrix4<f32> {
     // Rotate so that the line of sight from the eye position to the target maps to the z axis.
     // Camera up direction maps to y axis. x- axis is defined from the other two by cross
     // product
-
-    // We do not care about the w-component. Lets get rid of it since cross product is not
-    // defined for 4D vectors
-    let reduce_dim = Matrix3x4::from_rows(
-        &[
-            RowVector4::new(1.0, 0.0, 0.0, 0.0),
-            RowVector4::new(0.0, 1.0, 0.0, 0.0),
-            RowVector4::new(0.0, 0.0, 1.0, 0.0),
-        ],
-    );
-    let lookat = reduce_dim * lookat;
-    let up = reduce_dim * up;
 
     // Unit vectors in camera space
     let z = (lookat - eye).normalize();
@@ -259,7 +247,7 @@ impl Mesh {
     ///
     /// * `eye` - Position of the camera eye
     /// * `buffer` - Display buffer (render target)
-    pub fn render(self: &Mesh, eye: Vector3<f32>, buffer: &mut DisplayBuffer) {
+    pub fn render(self: &Mesh, eye: Vector3<f32>, lookat: Vector3<f32>, buffer: &mut DisplayBuffer) {
         let m_rot_x = Matrix4::from_rows(
             &[
                 RowVector4::new(1.0, 0.0, 0.0, 0.0),
@@ -297,7 +285,7 @@ impl Mesh {
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let aspect_ratio = (buffer.width as f32) / (buffer.height as f32);
         let view: Matrix4<f32> =
-            build_view_matrix(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
+            build_view_matrix(eye, lookat, Vector3::new(0.0, 1.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1, 5.0, 78.0, aspect_ratio);
 
         // loop through all polygons, each consists of 3 vertices

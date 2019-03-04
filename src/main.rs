@@ -9,18 +9,10 @@ use sfml::system::Clock;
 use sfml::window::{Event, Key, Style, VideoMode};
 
 const FPS: f32 = 60.0;
-const WIN_WIDTH: usize = 1024;
-const WIN_HEIGHT: usize = 768;
+const WIN_WIDTH: usize = 2560;
+const WIN_HEIGHT: usize = 1440;
 
-fn main() {
-    let mut clock = Clock::start();
-    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
-
-    window.set_vertical_sync_enabled(true);
-
-    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
-
+fn create_cube() -> core::Mesh {
     let mut cube = core::Mesh::new();
     cube.vertices.append(&mut vec![
         Vector4::new(-1.0, 1.0, 1.0, 1.0),
@@ -64,7 +56,24 @@ fn main() {
     ]);
     cube.to_triangles();
 
+    return cube;
+}
+
+fn main() {
+    let mut clock = Clock::start();
+    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
+    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
+
+    window.set_vertical_sync_enabled(true);
+
+    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
+
+    let mut cube = create_cube();
+    let mut cube2 = create_cube();
+
     cube.translate(Vector3::new(0.0, 0.0, -6.0));
+    cube2.translate(Vector3::new(0.0, 0.0, -24.0));
+
 
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
@@ -134,10 +143,14 @@ fn main() {
         eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
-        // rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
+        let lookat = Vector3::new(0.0, 0.0, -6.0);
+
         db.clear();
         cube.rotate(Vector3::new(0.001, 0.001, 0.001));
-        cube.render(eye_pos, &mut db);
+        cube2.rotate(Vector3::new(-0.001, -0.001, -0.001));
+
+        cube.render(eye_pos, lookat, &mut db);
+        cube2.render(eye_pos, lookat, &mut db);
         /*
         let mouse_x = window.mouse_position().x;
         let mouse_y = /*core::WIN_HEIGHT as i32 -*/ window.mouse_position().y;
