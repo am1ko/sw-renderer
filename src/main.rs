@@ -12,15 +12,7 @@ const FPS: f32 = 60.0;
 const WIN_WIDTH: usize = 1024;
 const WIN_HEIGHT: usize = 768;
 
-fn main() {
-    let mut clock = Clock::start();
-    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
-
-    window.set_vertical_sync_enabled(true);
-
-    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
-
+fn create_cube() -> core::Mesh {
     let mut cube = core::Mesh::new();
     cube.vertices.append(&mut vec![
         Vector4::new(-1.0, 1.0, 1.0, 1.0),
@@ -63,6 +55,20 @@ fn main() {
         [4, 6, 7],
     ]);
     cube.to_triangles();
+
+    return cube;
+}
+
+fn main() {
+    let mut clock = Clock::start();
+    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
+    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
+
+    window.set_vertical_sync_enabled(true);
+
+    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
+
+    let mut cube = create_cube();
 
     cube.translate(Vector3::new(0.0, 0.0, -6.0));
 
@@ -134,47 +140,46 @@ fn main() {
         eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
-        // rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
-        db.clear();
-        cube.rotate(Vector3::new(0.001, 0.001, 0.001));
-        cube.render(eye_pos, &mut db);
-        /*
         let mouse_x = window.mouse_position().x;
-        let mouse_y = /*core::WIN_HEIGHT as i32 -*/ window.mouse_position().y;
-        println!("{} {}", mouse_x, mouse_y);
+        let mouse_y = WIN_HEIGHT as i32 - window.mouse_position().y;
+        let lookat_x = (mouse_x as f32 - ((WIN_WIDTH/2) as f32)) / (WIN_WIDTH as f32);
+        let lookat_y = (mouse_y as f32 - ((WIN_HEIGHT/2) as f32)) / (WIN_HEIGHT as f32);
+        let _lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
+        let lookat = Vector3::new(0.0, 0.0, -10.0);
+        let red = renderer::core::Color { r: 255, g: 0, b: 0, a: 255};
 
-        if mouse_x > 0 && mouse_y > 0 {
-            let color = core::Color {
-                r: 255,
-                g: 0,
-                b: 0,
-                a: 255,
-            };
-            let p1: na::Vector2<usize> = na::Vector2::new(0, 0);
-            let p2: na::Vector2<usize> = na::Vector2::new(mouse_x as usize, mouse_y as usize);
-            rasterization::draw_line_usize(p1, p2, color, &mut db);
-        }
-        let color = core::Color {
-            r: 255,
-            g: 0,
-            b: 0,
-            a: 255,
+        db.clear();
+
+        /* Rotating cube test */
+        cube.rotate(Vector3::new(0.001, 0.001, 0.001));
+        cube.render(eye_pos, lookat, &mut db, red);
+
+        /* Overlapping triangles example (z-buffering) */
+        /*
+        let triangle = Triangle {
+            v0: Vector3::new(160.0, 400.0, -3.0),
+            v1: Vector3::new(0.0, 0.0, -3.0),
+            v2: Vector3::new(320.0, 0.0, -1.0),
         };
-        let p1: na::Vector2<usize> = na::Vector2::new(0, core::WIN_HEIGHT/2);
-        let p2: na::Vector2<usize> = na::Vector2::new(core::WIN_WIDTH-1, core::WIN_HEIGHT/2);
-        rasterization::draw_line_usize(p1, p2, color, &mut db);
+        triangle.render(red, &mut db);
 
-        let color = core::Color {
-            r: 0,
-            g: 0,
-            b: 255,
-            a: 255,
+        let triangle2 = Triangle {
+            v0: Vector3::new(0.0, 239.0, -2.0),
+            v1: Vector3::new(200.0, 0.0, -2.0),
+            v2: Vector3::new(600.0, 0.0, -2.0),
         };
-        let p1: na::Vector2<usize> = na::Vector2::new(0, 384);
-        let p2: na::Vector2<usize> = na::Vector2::new(50, 434);
-        let p3: na::Vector2<usize> = na::Vector2::new(100, 334);
+        triangle2.render(green, &mut db);
+        */
 
-        rasterization::draw_triangle_usize(p1, p2, p3, color, &mut db);
+        /* Scan line example */
+        /*
+        let scan_line_start = Vector3::new(20.0, 20.0, 0.0);
+        let scan_line_end = Vector3::new(120.0, 20.0, -3.0);
+        let scan_line = LineSegment {
+            v0: scan_line_start,
+            v1: scan_line_end,
+        };
+        scan_line.render(color, &mut db);
         */
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {

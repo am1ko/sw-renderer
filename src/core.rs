@@ -8,7 +8,7 @@
 // 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
-use na::{Matrix3x4, Matrix4, RowVector4, Vector2, Vector3, Vector4};
+use na::{Matrix3x4, Matrix4, RowVector4, Vector3, Vector4};
 
 /// Renderable represents any model that can be drawn to a display buffer
 pub trait Renderable {
@@ -35,28 +35,6 @@ pub struct LineSegment<T> {
     pub v1: T,
 }
 
-impl Triangle<Vector2<usize>> {
-    /// Order the points of a triangle based on the y-coordinate such that v0
-    /// has the largest y-coordinate and v2 the smallest
-    pub fn order_by_y(&mut self) {
-        let mut ordered = [self.v0, self.v1, self.v2];
-        ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
-        self.v0 = ordered[2];
-        self.v1 = ordered[1];
-        self.v2 = ordered[0];
-    }
-
-    /// Return true if the triangle is top-flat
-    pub fn is_top_flat(&self) -> bool {
-        self.v0.y == self.v1.y
-    }
-
-    /// Return true if the triangle is bottom-flat
-    pub fn is_bottom_flat(&self) -> bool {
-        self.v1.y == self.v2.y
-    }
-}
-
 impl Triangle<Vector4<f32>> {
     /// Perform a linear transformation to all vertices of the triangle
     pub fn transform(&self, m: Matrix4<f32>) -> Triangle<Vector4<f32>> {
@@ -76,6 +54,42 @@ impl Triangle<Vector3<f32>> {
             (self.v0.y + self.v1.y + self.v2.y) / 3.0,
             (self.v0.z + self.v1.z + self.v2.z) / 3.0,
         )
+    }
+
+    pub fn order_by_y(&mut self) {
+        let mut ordered = [self.v0, self.v1, self.v2];
+        ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+        self.v0 = ordered[2];
+        self.v1 = ordered[1];
+        self.v2 = ordered[0];
+    }
+
+    /// Return true if the triangle is top-flat
+    pub fn is_top_flat(&self) -> bool {
+        self.v0.y as i32 == self.v1.y as i32
+    }
+
+    /// Return true if the triangle is bottom-flat
+    pub fn is_bottom_flat(&self) -> bool {
+        self.v1.y as i32 == self.v2.y as i32
+    }
+
+    /// Convert to usize type
+    pub fn to_usize(&self) -> Triangle<Vector3<usize>>{
+        Triangle {
+            v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),
+            v1: Vector3::new(self.v1.x as usize, self.v1.y as usize, self.v1.z as usize),
+            v2: Vector3::new(self.v2.x as usize, self.v2.y as usize, self.v2.z as usize),
+        }
+    }
+
+    /// Convert to i64 type
+    pub fn to_i64(&self) -> Triangle<Vector3<i64>> {
+        Triangle {
+            v0: Vector3::new(self.v0.x as i64, self.v0.y as i64, self.v0.z as i64),
+            v1: Vector3::new(self.v1.x as i64, self.v1.y as i64, self.v1.z as i64),
+            v2: Vector3::new(self.v2.x as i64, self.v2.y as i64, self.v2.z as i64),
+        }
     }
 }
 
@@ -97,22 +111,10 @@ fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f3
     );
 }
 
-fn build_view_matrix(eye: Vector3<f32>, lookat: Vector4<f32>, up: Vector4<f32>) -> Matrix4<f32> {
+fn build_view_matrix(eye: Vector3<f32>, lookat: Vector3<f32>, up: Vector3<f32>) -> Matrix4<f32> {
     // Rotate so that the line of sight from the eye position to the target maps to the z axis.
     // Camera up direction maps to y axis. x- axis is defined from the other two by cross
     // product
-
-    // We do not care about the w-component. Lets get rid of it since cross product is not
-    // defined for 4D vectors
-    let reduce_dim = Matrix3x4::from_rows(
-        &[
-            RowVector4::new(1.0, 0.0, 0.0, 0.0),
-            RowVector4::new(0.0, 1.0, 0.0, 0.0),
-            RowVector4::new(0.0, 0.0, 1.0, 0.0),
-        ],
-    );
-    let lookat = reduce_dim * lookat;
-    let up = reduce_dim * up;
 
     // Unit vectors in camera space
     let z = (lookat - eye).normalize();
@@ -171,6 +173,8 @@ pub struct DisplayBuffer {
     pub bpp: usize,
     /// Contents of the buffer (pixel data)
     pub data: Box<[u8]>,
+    /// Z/depth buffer
+    pub z_buffer: Box<[f32]>
 }
 
 impl DisplayBuffer {
@@ -180,6 +184,7 @@ impl DisplayBuffer {
             width: width,
             bpp: bpp,
             data: vec![0; width * height * bpp].into_boxed_slice(),
+            z_buffer: vec![std::f32::MIN; width * height].into_boxed_slice(),
         };
     }
 
@@ -188,9 +193,24 @@ impl DisplayBuffer {
         return self.height * self.width * self.bpp;
     }
 
+    /// return the number of pixels
+    pub fn num_pixels(&self) -> usize {
+        return self.height*self.width;
+    }
+
     /// Reset the contents of the buffer so that all pixels are black
     pub fn clear(&mut self) {
         self.data = vec![0; self.width * self.height * self.bpp].into_boxed_slice();
+        // this takes a lot of time when the initialization value is not 0.0
+        self.z_buffer = vec![std::f32::MIN; self.width * self.height].into_boxed_slice();
+        // faster version
+        // unsafe {
+            // libc::memset(
+                // self.z_buffer.as_mut_ptr() as _,
+                // std::f32::MIN as i32,
+                // self.z_buffer.len() * mem::size_of::<f32>(),
+            // );
+        // }
     }
 
     /// Set a single pixel to a desired color
@@ -200,15 +220,19 @@ impl DisplayBuffer {
     /// * `x` - X coordinate in pixels, value 0 corresponds to left edge
     /// * `y` - Y coordinate in pixels, value 0 correspoonds to bottom edge
     /// * 'color' - Color of the pixel
-    pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, z: f32, color: Color) {
         assert!(x < self.width);
         assert!(y < self.height);
-        let index: usize = (self.height - y - 1) * self.width * self.bpp + x * self.bpp;
-        if index < (self.size() - self.bpp) {
-            self.data[index] = color.r;
-            self.data[index + 1] = color.g;
-            self.data[index + 2] = color.b;
-            self.data[index + 3] = color.a;
+        let index: usize = (self.height - y - 1) * self.width + x;
+
+        if index < self.num_pixels() {
+            if self.z_buffer[index] < z {
+                self.z_buffer[index] = z;
+                self.data[index*self.bpp] = color.r;
+                self.data[index*self.bpp + 1] = color.g;
+                self.data[index*self.bpp + 2] = color.b;
+                self.data[index*self.bpp + 3] = color.a;
+            }
         }
     }
 }
@@ -259,7 +283,7 @@ impl Mesh {
     ///
     /// * `eye` - Position of the camera eye
     /// * `buffer` - Display buffer (render target)
-    pub fn render(self: &Mesh, eye: Vector3<f32>, buffer: &mut DisplayBuffer) {
+    pub fn render(self: &Mesh, eye: Vector3<f32>, lookat: Vector3<f32>, buffer: &mut DisplayBuffer, color: Color) {
         let m_rot_x = Matrix4::from_rows(
             &[
                 RowVector4::new(1.0, 0.0, 0.0, 0.0),
@@ -297,7 +321,7 @@ impl Mesh {
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let aspect_ratio = (buffer.width as f32) / (buffer.height as f32);
         let view: Matrix4<f32> =
-            build_view_matrix(eye, self.position, Vector4::new(0.0, 1.0, 0.0, 0.0));
+            build_view_matrix(eye, lookat, Vector3::new(0.0, 1.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1, 5.0, 78.0, aspect_ratio);
 
         // loop through all polygons, each consists of 3 vertices
@@ -331,16 +355,16 @@ impl Mesh {
             // product is negative, the light is hitting the inner surface of
             // the mesh and we can simply ignore the triangle (not render it)
             if brightness > 0.0 {
-                let brightness = (brightness * 255.0) as u8;
                 let color = Color {
-                    r: brightness,
-                    g: brightness,
-                    b: brightness,
+                    r: (brightness*color.r as f32) as u8,
+                    g: (brightness*color.g as f32) as u8,
+                    b: (brightness*color.b as f32) as u8,
                     a: 255,
                 };
 
                 // Step 2: World to camera space
                 let triangle_view = triangle_world.transform(view);
+
                 // Step 3: Camera to clip space
                 let triangle_camera = triangle_view.transform(projection);
 
@@ -351,33 +375,36 @@ impl Mesh {
                     v0: Vector3::new(
                         triangle_camera.v0.x / triangle_camera.v0.w,
                         triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z / triangle_camera.v0.w,
+                        triangle_camera.v0.z// / triangle_camera.v0.w,
                     ),
                     v1: Vector3::new(
                         triangle_camera.v1.x / triangle_camera.v1.w,
                         triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z / triangle_camera.v1.w,
+                        triangle_camera.v1.z// / triangle_camera.v1.w,
                     ),
                     v2: Vector3::new(
                         triangle_camera.v2.x / triangle_camera.v2.w,
                         triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z / triangle_camera.v2.w,
+                        triangle_camera.v2.z// / triangle_camera.v2.w,
                     ),
                 };
 
                 // Step 5: Viewport transform
                 let mut t_viewport = Triangle {
-                    v0: Vector2::new(
-                        ((1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32) as usize,
+                    v0: Vector3::new(
+                        (1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v0.z
                     ),
-                    v1: Vector2::new(
-                        ((1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32) as usize,
+                    v1: Vector3::new(
+                        (1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v1.z
                     ),
-                    v2: Vector2::new(
-                        ((1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32) as usize,
+                    v2: Vector3::new(
+                        (1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v2.z
                     ),
                 };
 
