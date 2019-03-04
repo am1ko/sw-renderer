@@ -74,7 +74,6 @@ fn main() {
     cube.translate(Vector3::new(0.0, 0.0, -6.0));
     cube2.translate(Vector3::new(0.0, 0.0, -24.0));
 
-
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
     let mut db = core::DisplayBuffer::new(WIN_WIDTH, WIN_HEIGHT, 4);
@@ -143,7 +142,14 @@ fn main() {
         eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
-        let lookat = Vector3::new(0.0, 0.0, -6.0);
+        /*
+        let mouse_x = window.mouse_position().x;
+        let mouse_y = WIN_HEIGHT as i32 - window.mouse_position().y;
+        let lookat_x = (mouse_x as f32 - ((WIN_WIDTH/2) as f32)) / (WIN_WIDTH as f32);
+        let lookat_y = (mouse_y as f32 - ((WIN_HEIGHT/2) as f32)) / (WIN_HEIGHT as f32);
+        let lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
+        */
+        let lookat = Vector3::new(0.0, 0.0, -10.0);
 
         db.clear();
         cube.rotate(Vector3::new(0.001, 0.001, 0.001));
@@ -151,11 +157,8 @@ fn main() {
 
         cube.render(eye_pos, lookat, &mut db);
         cube2.render(eye_pos, lookat, &mut db);
-        /*
-        let mouse_x = window.mouse_position().x;
-        let mouse_y = /*core::WIN_HEIGHT as i32 -*/ window.mouse_position().y;
-        println!("{} {}", mouse_x, mouse_y);
 
+/*
         if mouse_x > 0 && mouse_y > 0 {
             let color = core::Color {
                 r: 255,
@@ -173,6 +176,7 @@ fn main() {
             b: 0,
             a: 255,
         };
+
         let p1: na::Vector2<usize> = na::Vector2::new(0, core::WIN_HEIGHT/2);
         let p2: na::Vector2<usize> = na::Vector2::new(core::WIN_WIDTH-1, core::WIN_HEIGHT/2);
         rasterization::draw_line_usize(p1, p2, color, &mut db);
