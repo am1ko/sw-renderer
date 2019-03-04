@@ -8,7 +8,7 @@
 // 4) Clipping + perspective divide (normalization) => NDC space [-1, 1]
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
-use na::{Matrix3x4, Matrix4, RowVector4, Vector2, Vector3, Vector4};
+use na::{Matrix3x4, Matrix4, RowVector4, Vector3, Vector4};
 
 /// Renderable represents any model that can be drawn to a display buffer
 pub trait Renderable {
@@ -35,7 +35,7 @@ pub struct LineSegment<T> {
     pub v1: T,
 }
 
-impl Triangle<Vector2<usize>> {
+impl Triangle<Vector3<usize>> {
     /// Order the points of a triangle based on the y-coordinate such that v0
     /// has the largest y-coordinate and v2 the smallest
     pub fn order_by_y(&mut self) {
@@ -355,17 +355,20 @@ impl Mesh {
 
                 // Step 5: Viewport transform
                 let mut t_viewport = Triangle {
-                    v0: Vector2::new(
+                    v0: Vector3::new(
                         ((1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32) as usize,
                         ((1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32) as usize,
+                        t_ndc.v0.z as usize
                     ),
-                    v1: Vector2::new(
+                    v1: Vector3::new(
                         ((1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32) as usize,
                         ((1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32) as usize,
+                        t_ndc.v1.z as usize
                     ),
-                    v2: Vector2::new(
+                    v2: Vector3::new(
                         ((1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32) as usize,
                         ((1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32) as usize,
+                        t_ndc.v2.z as usize
                     ),
                 };
 

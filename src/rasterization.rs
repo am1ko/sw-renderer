@@ -1,7 +1,7 @@
 use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
-use na::Vector2;
+use na::{Vector2, Vector3};
 
-impl Renderable for Triangle<Vector2<usize>> {
+impl Renderable for Triangle<Vector3<usize>> {
     /// Draw a color-filled triangle
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
         let p1 = self.v0;
@@ -25,7 +25,7 @@ impl Renderable for Triangle<Vector2<usize>> {
 
             // split the triangle into two: a bottom flat one and a top flat one
             let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
-            let p4: Vector2<usize> = Vector2::new(x4, p2.y);
+            let p4: Vector3<usize> = Vector3::new(x4, p2.y, p2.z);
 
             let bottom_flat = Triangle {
                 v0: p1,
@@ -44,7 +44,7 @@ impl Renderable for Triangle<Vector2<usize>> {
     }
 }
 
-impl Renderable for LineSegment<Vector2<usize>> {
+impl Renderable for LineSegment<Vector3<usize>> {
     /// Draw a colored line segment between two points
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
         if self.v0.x >= buffer.width || self.v0.y >= buffer.height {
@@ -120,7 +120,7 @@ impl Renderable for LineSegment<Vector2<f32>> {
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_bottom_flat_triangle(
-    triangle: &Triangle<Vector2<usize>>,
+    triangle: &Triangle<Vector3<usize>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
@@ -134,8 +134,8 @@ fn fill_bottom_flat_triangle(
     let mut curr_x_2: f32 = v0.x as f32;
 
     for y in (v1.y..v0.y + 1).rev() {
-        let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
-        let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
+        let scan_line_start: Vector3<usize> = Vector3::new(curr_x_1 as usize, y, v0.z);
+        let scan_line_end: Vector3<usize> = Vector3::new(curr_x_2 as usize, y, v0.z);
 
         let scan_line = LineSegment {
             v0: scan_line_start,
@@ -155,7 +155,7 @@ fn fill_bottom_flat_triangle(
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_top_flat_triangle(
-    triangle: &Triangle<Vector2<usize>>,
+    triangle: &Triangle<Vector3<usize>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
@@ -169,8 +169,8 @@ fn fill_top_flat_triangle(
     let mut curr_x_2 = v2.x as f32;
 
     for y in v2.y..v0.y + 1 {
-        let scan_line_start: Vector2<usize> = Vector2::new(curr_x_1 as usize, y);
-        let scan_line_end: Vector2<usize> = Vector2::new(curr_x_2 as usize, y);
+        let scan_line_start: Vector3<usize> = Vector3::new(curr_x_1 as usize, y, v0.z);
+        let scan_line_end: Vector3<usize> = Vector3::new(curr_x_2 as usize, y, v0.z);
 
         let scan_line = LineSegment {
             v0: scan_line_start,
