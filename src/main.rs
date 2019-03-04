@@ -64,7 +64,7 @@ fn main() {
     ]);
     cube.to_triangles();
 
-    cube.translate(Vector3::new(0.0, 0.0, -3.0));
+    cube.translate(Vector3::new(0.0, 0.0, -6.0));
 
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
@@ -136,6 +136,7 @@ fn main() {
 
         // rotate_mesh(&mut cube, Vector3::new(0.00, 0.01, 0.01));
         db.clear();
+        cube.rotate(Vector3::new(0.001, 0.001, 0.001));
         cube.render(eye_pos, &mut db);
         /*
         let mouse_x = window.mouse_position().x;

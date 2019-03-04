@@ -319,8 +319,11 @@ impl Mesh {
             };
 
             // Light vector is a unit vector from the mesh to the light source.
+            let n = self.triangle_normals[i];
+            let n = model*Vector4::new(n.x, n.y, n.z, 0.0);
+            let triangle_normal = Vector3::new(n.x, n.y, n.z);
             let light_vector = (eye - triangle_world_3d.center_point()).normalize();
-            let brightness = light_vector.dot(&self.triangle_normals[i]);
+            let brightness = light_vector.dot(&triangle_normal);
 
             // If the dot product is positive, the light is hitting the outer
             // surface of the mesh. In this case the value of the dot product
@@ -411,9 +414,9 @@ impl Mesh {
     /// # Arguments
     ///
     /// * `angle` - Desired rotation angle around each cartesian axis in radians
-    pub fn rotate(this: &mut Mesh, angle: Vector3<f32>) {
-        this.angle.x = this.angle.x + angle.x;
-        this.angle.y = this.angle.y + angle.y;
-        this.angle.z = this.angle.z + angle.z;
+    pub fn rotate(self: &mut Mesh, angle: Vector3<f32>) {
+        self.angle.x = self.angle.x + angle.x;
+        self.angle.y = self.angle.y + angle.y;
+        self.angle.z = self.angle.z + angle.z;
     }
 }
