@@ -82,38 +82,6 @@ impl Renderable for LineSegment<Vector3<f32>> {
     }
 }
 
-/*
-impl Renderable for LineSegment<Vector3<f32>> {
-    /// Draw a colored line segment between two points
-    fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
-        let threshold = 1.0;
-        let sub = self.v1 - self.v0;
-        let dist = (sub.x + sub.y).abs().sqrt();
-
-        if dist > threshold {
-            let middle = self.v0 + sub / 2.0;
-            if (middle.x >= 0.0 && middle.x <= buffer.width as f32) &&
-                (middle.y >= 0.0 && middle.y <= buffer.height as f32)
-            {
-                buffer.set_pixel(middle.x as usize, middle.y as usize, color);
-
-                let first = LineSegment {
-                    v0: self.v0,
-                    v1: middle,
-                };
-                let second = LineSegment {
-                    v0: middle,
-                    v1: self.v1,
-                };
-
-                first.render(color, buffer);
-                second.render(color, buffer);
-            }
-        }
-    }
-}
-*/
-
 /// Draw a filled bottom-flat triangle
 ///
 /// * `triangle` - Triangle to fill
