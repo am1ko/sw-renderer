@@ -81,7 +81,7 @@ impl Renderable for LineSegment<Vector3<usize>> {
     }
 }
 
-impl Renderable for LineSegment<Vector2<f32>> {
+impl Renderable for LineSegment<Vector3<f32>> {
     /// Draw a colored line segment between two points
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
         let threshold = 1.0;
@@ -131,8 +131,9 @@ fn fill_bottom_flat_triangle(
     let mut curr_x_2: f32 = v0.x as f32;
 
     for y in (v1.y..v0.y + 1).rev() {
-        let scan_line_start: Vector3<usize> = Vector3::new(curr_x_1 as usize, y, v0.z);
-        let scan_line_end: Vector3<usize> = Vector3::new(curr_x_2 as usize, y, v0.z);
+        // todo: interpolate z for start and end
+        let scan_line_start = Vector3::new(curr_x_1, y as f32, triangle.v0.z);
+        let scan_line_end = Vector3::new(curr_x_2, y as f32, triangle.v0.z);
 
         let scan_line = LineSegment {
             v0: scan_line_start,
