@@ -1,5 +1,5 @@
 use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
-use na::{Vector2, Vector3};
+use na::{Vector3};
 
 impl Renderable for Triangle<Vector3<f32>> {
     /// Draw a color-filled triangle
