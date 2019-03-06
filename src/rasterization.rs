@@ -11,8 +11,7 @@ impl Renderable for Triangle<Vector3<f32>> {
         let p3 = triangle.v2;
 
         if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
-            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
-        {
+            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height {
             return;
         }
 
@@ -21,12 +20,8 @@ impl Renderable for Triangle<Vector3<f32>> {
         } else if triangle.is_bottom_flat() {
             fill_bottom_flat_triangle(&triangle, color, buffer);
         } else {
-            let pf1: Vector2<f32> = Vector2::new(p1.x as f32, p1.y as f32);
-            let pf2: Vector2<f32> = Vector2::new(p2.x as f32, p2.y as f32);
-            let pf3: Vector2<f32> = Vector2::new(p3.x as f32, p3.y as f32);
-
             // split the triangle into two: a bottom flat one and a top flat one
-            let x4 = (pf1.x + (pf1.y - pf2.y) / (pf1.y - pf3.y) * (pf3.x - pf1.x)) as usize;
+            let x4 = (self.v0.x + (self.v0.y - self.v1.y) / (self.v0.y - self.v2.y) * (self.v2.x - self.v0.x)) as usize;
             let p4: Vector3<usize> = Vector3::new(x4, p2.y, p2.z);
 
             let bottom_flat = Triangle {
