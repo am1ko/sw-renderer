@@ -77,6 +77,22 @@ impl Triangle<Vector3<f32>> {
             (self.v0.z + self.v1.z + self.v2.z) / 3.0,
         )
     }
+
+    pub fn order_by_y(&mut self) {
+        let mut ordered = [self.v0, self.v1, self.v2];
+        ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+        self.v0 = ordered[2];
+        self.v1 = ordered[1];
+        self.v2 = ordered[0];
+    }
+
+    pub fn to_usize(&self) -> Triangle<Vector3<usize>>{
+        Triangle {
+            v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),
+            v1: Vector3::new(self.v1.x as usize, self.v1.y as usize, self.v1.z as usize),
+            v2: Vector3::new(self.v2.x as usize, self.v2.y as usize, self.v2.z as usize),
+        }
+    }
 }
 
 fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f32) -> Matrix4<f32> {
@@ -356,19 +372,19 @@ impl Mesh {
                 // Step 5: Viewport transform
                 let mut t_viewport = Triangle {
                     v0: Vector3::new(
-                        ((1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32) as usize,
-                        t_ndc.v0.z as usize
+                        (1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v0.z
                     ),
                     v1: Vector3::new(
-                        ((1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32) as usize,
-                        t_ndc.v1.z as usize
+                        (1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v1.z
                     ),
                     v2: Vector3::new(
-                        ((1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32) as usize,
-                        ((1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32) as usize,
-                        t_ndc.v2.z as usize
+                        (1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32,
+                        (1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32,
+                        t_ndc.v2.z
                     ),
                 };
 

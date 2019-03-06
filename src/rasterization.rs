@@ -1,12 +1,14 @@
 use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
 use na::{Vector2, Vector3};
 
-impl Renderable for Triangle<Vector3<usize>> {
+impl Renderable for Triangle<Vector3<f32>> {
     /// Draw a color-filled triangle
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
-        let p1 = self.v0;
-        let p2 = self.v1;
-        let p3 = self.v2;
+        let triangle = self.to_usize();
+
+        let p1 = triangle.v0;
+        let p2 = triangle.v1;
+        let p3 = triangle.v2;
 
         if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
             p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height
@@ -14,10 +16,10 @@ impl Renderable for Triangle<Vector3<usize>> {
             return;
         }
 
-        if self.is_top_flat() {
-            fill_top_flat_triangle(self, color, buffer);
-        } else if self.is_bottom_flat() {
-            fill_bottom_flat_triangle(self, color, buffer);
+        if triangle.is_top_flat() {
+            fill_top_flat_triangle(&triangle, color, buffer);
+        } else if triangle.is_bottom_flat() {
+            fill_bottom_flat_triangle(&triangle, color, buffer);
         } else {
             let pf1: Vector2<f32> = Vector2::new(p1.x as f32, p1.y as f32);
             let pf2: Vector2<f32> = Vector2::new(p2.x as f32, p2.y as f32);
