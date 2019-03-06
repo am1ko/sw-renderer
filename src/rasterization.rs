@@ -1,5 +1,5 @@
 use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
-use na::{Vector3};
+use na::{Vector2, Vector3};
 
 impl Renderable for Triangle<Vector3<f32>> {
     /// Draw a color-filled triangle
@@ -94,11 +94,12 @@ fn fill_bottom_flat_triangle(
 ) {
     let v0 = triangle.to_usize().v0;
     let v1 = triangle.to_usize().v1;
-    let inv_slope_1 = (triangle.v0.x - triangle.v1.x) / (triangle.v1.y - triangle.v0.y);
-    let inv_slope_2 = (triangle.v0.x - triangle.v2.x) / (triangle.v1.y - triangle.v0.y);
+    let v2 = triangle.to_usize().v2;
+    let inv_slope_1 = (v0.x as f32 - v1.x as f32) / (v1.y as f32 - v0.y as f32);
+    let inv_slope_2 = (v0.x as f32 - v2.x as f32) / (v1.y as f32 - v0.y as f32);
 
-    let mut curr_x_1: f32 = triangle.v0.x;
-    let mut curr_x_2: f32 = triangle.v0.x;
+    let mut curr_x_1: f32 = v0.x as f32;
+    let mut curr_x_2: f32 = v0.x as f32;
 
     for y in (v1.y..v0.y + 1).rev() {
         // todo: interpolate z for start and end
@@ -133,8 +134,8 @@ fn fill_top_flat_triangle(
     let inv_slope_1 = (v0.x as f32 - v2.x as f32) / (v2.y as f32 - v0.y as f32);
     let inv_slope_2 = (v1.x as f32 - v2.x as f32) / (v2.y as f32 - v1.y as f32);
 
-    let mut curr_x_1 = triangle.v2.x;
-    let mut curr_x_2 = triangle.v2.x;
+    let mut curr_x_1 = v2.x as f32;
+    let mut curr_x_2 = v2.x as f32;
 
     for y in v2.y..v0.y + 1 {
         let scan_line_start = Vector3::new(curr_x_1, y as f32, triangle.v0.z);
