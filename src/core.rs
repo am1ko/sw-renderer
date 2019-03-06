@@ -86,6 +86,16 @@ impl Triangle<Vector3<f32>> {
         self.v2 = ordered[0];
     }
 
+    /// Return true if the triangle is top-flat
+    pub fn is_top_flat(&self) -> bool {
+        self.v0.y as i32 == self.v1.y as i32
+    }
+
+    /// Return true if the triangle is bottom-flat
+    pub fn is_bottom_flat(&self) -> bool {
+        self.v1.y as i32 == self.v2.y as i32
+    }
+
     pub fn to_usize(&self) -> Triangle<Vector3<usize>>{
         Triangle {
             v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),

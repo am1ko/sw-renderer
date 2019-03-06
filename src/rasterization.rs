@@ -15,24 +15,24 @@ impl Renderable for Triangle<Vector3<f32>> {
             return;
         }
 
-        if triangle.is_top_flat() {
-            fill_top_flat_triangle(&triangle, color, buffer);
-        } else if triangle.is_bottom_flat() {
-            fill_bottom_flat_triangle(&triangle, color, buffer);
+        if self.is_top_flat() {
+            fill_top_flat_triangle(&self, color, buffer);
+        } else if self.is_bottom_flat() {
+            fill_bottom_flat_triangle(&self, color, buffer);
         } else {
             // split the triangle into two: a bottom flat one and a top flat one
-            let x4 = (self.v0.x + (self.v0.y - self.v1.y) / (self.v0.y - self.v2.y) * (self.v2.x - self.v0.x)) as usize;
-            let p4: Vector3<usize> = Vector3::new(x4, p2.y, p2.z);
+            let x4 = self.v0.x + (self.v0.y - self.v1.y) / (self.v0.y - self.v2.y) * (self.v2.x - self.v0.x);
+            let v_middle = Vector3::new(x4, self.v1.y, self.v1.z);
 
             let bottom_flat = Triangle {
-                v0: p1,
-                v1: p2,
-                v2: p4,
+                v0: self.v0,
+                v1: self.v1,
+                v2: v_middle,
             };
             let top_flat = Triangle {
-                v0: p2,
-                v1: p4,
-                v2: p3,
+                v0: self.v1,
+                v1: v_middle,
+                v2: self.v2,
             };
 
             fill_bottom_flat_triangle(&bottom_flat, color, buffer);
@@ -117,13 +117,13 @@ impl Renderable for LineSegment<Vector2<f32>> {
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_bottom_flat_triangle(
-    triangle: &Triangle<Vector3<usize>>,
+    triangle: &Triangle<Vector3<f32>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
-    let v0 = triangle.v0;
-    let v1 = triangle.v1;
-    let v2 = triangle.v2;
+    let v0 = triangle.to_usize().v0;
+    let v1 = triangle.to_usize().v1;
+    let v2 = triangle.to_usize().v2;
     let inv_slope_1 = (v0.x as f32 - v1.x as f32) / (v1.y as f32 - v0.y as f32);
     let inv_slope_2 = (v0.x as f32 - v2.x as f32) / (v1.y as f32 - v0.y as f32);
 
@@ -152,13 +152,13 @@ fn fill_bottom_flat_triangle(
 /// * `color` - Color of the triangle
 /// * `buffer` - Display buffer (render target)
 fn fill_top_flat_triangle(
-    triangle: &Triangle<Vector3<usize>>,
+    triangle: &Triangle<Vector3<f32>>,
     color: Color,
     buffer: &mut DisplayBuffer,
 ) {
-    let v0 = triangle.v0;
-    let v1 = triangle.v1;
-    let v2 = triangle.v2;
+    let v0 = triangle.to_usize().v0;
+    let v1 = triangle.to_usize().v1;
+    let v2 = triangle.to_usize().v2;
     let inv_slope_1 = (v0.x as f32 - v2.x as f32) / (v2.y as f32 - v0.y as f32);
     let inv_slope_2 = (v1.x as f32 - v2.x as f32) / (v2.y as f32 - v1.y as f32);
 
