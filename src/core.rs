@@ -185,6 +185,8 @@ pub struct DisplayBuffer {
     pub bpp: usize,
     /// Contents of the buffer (pixel data)
     pub data: Box<[u8]>,
+    /// Z/depth buffer
+    pub z_buffer: Box<[f32]>
 }
 
 impl DisplayBuffer {
@@ -194,6 +196,7 @@ impl DisplayBuffer {
             width: width,
             bpp: bpp,
             data: vec![0; width * height * bpp].into_boxed_slice(),
+            z_buffer: vec![std::f32::MIN; width * height].into_boxed_slice(),
         };
     }
 
@@ -202,9 +205,16 @@ impl DisplayBuffer {
         return self.height * self.width * self.bpp;
     }
 
+    /// return the number of pixels
+    pub fn num_pixels(&self) -> usize {
+        return self.height*self.width;
+    }
+
     /// Reset the contents of the buffer so that all pixels are black
     pub fn clear(&mut self) {
         self.data = vec![0; self.width * self.height * self.bpp].into_boxed_slice();
+        // this takes a lot of time when the initialization value is not 0.0
+        self.z_buffer = vec![std::f32::MIN; self.width * self.height].into_boxed_slice();
     }
 
     /// Set a single pixel to a desired color
@@ -214,15 +224,19 @@ impl DisplayBuffer {
     /// * `x` - X coordinate in pixels, value 0 corresponds to left edge
     /// * `y` - Y coordinate in pixels, value 0 correspoonds to bottom edge
     /// * 'color' - Color of the pixel
-    pub fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
+    pub fn set_pixel(&mut self, x: usize, y: usize, z: f32, color: Color) {
         assert!(x < self.width);
         assert!(y < self.height);
-        let index: usize = (self.height - y - 1) * self.width * self.bpp + x * self.bpp;
-        if index < (self.size() - self.bpp) {
-            self.data[index] = color.r;
-            self.data[index + 1] = color.g;
-            self.data[index + 2] = color.b;
-            self.data[index + 3] = color.a;
+        let index: usize = (self.height - y - 1) * self.width + x;
+
+        if index < self.num_pixels() {
+            if self.z_buffer[index] < z {
+                self.z_buffer[index] = z;
+                self.data[index*self.bpp] = color.r;
+                self.data[index*self.bpp + 1] = color.g;
+                self.data[index*self.bpp + 2] = color.b;
+                self.data[index*self.bpp + 3] = color.a;
+            }
         }
     }
 }

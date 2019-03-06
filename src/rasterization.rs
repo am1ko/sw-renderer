@@ -62,7 +62,8 @@ impl Renderable for LineSegment<Vector3<f32>> {
         let mut err: i32 = dx - dy;
 
         loop {
-            buffer.set_pixel(x as usize, y as usize, color);
+            // todo z interpolation
+            buffer.set_pixel(x as usize, y as usize, self.v0.z, color);
 
             if x == x2 && y == y2 {
                 break;
