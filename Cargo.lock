@@ -88,6 +88,7 @@ dependencies = [
 name = "gfx_engine"
 version = "0.1.0"
 dependencies = [
+ "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sfml 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

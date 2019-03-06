@@ -9,6 +9,7 @@
 // 5) Viewport transform => raster space [0, W-1, 0, H-1]
 
 use na::{Matrix3x4, Matrix4, RowVector4, Vector3, Vector4};
+use std::mem;
 
 /// Renderable represents any model that can be drawn to a display buffer
 pub trait Renderable {
@@ -192,7 +193,15 @@ impl DisplayBuffer {
     pub fn clear(&mut self) {
         self.data = vec![0; self.width * self.height * self.bpp].into_boxed_slice();
         // this takes a lot of time when the initialization value is not 0.0
-        self.z_buffer = vec![std::f32::MIN; self.width * self.height].into_boxed_slice();
+        // self.z_buffer = vec![std::f32::MIN; self.width * self.height].into_boxed_slice();
+        // faster version
+        unsafe {
+            libc::memset(
+                self.z_buffer.as_mut_ptr() as _,
+                std::f32::MIN as i32,
+                self.z_buffer.len() * mem::size_of::<f32>(),
+            );
+        }
     }
 
     /// Set a single pixel to a desired color
