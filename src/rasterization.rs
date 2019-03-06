@@ -41,13 +41,13 @@ impl Renderable for Triangle<Vector3<f32>> {
     }
 }
 
-impl Renderable for LineSegment<Vector3<usize>> {
+impl Renderable for LineSegment<Vector3<f32>> {
     /// Draw a colored line segment between two points
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
-        if self.v0.x >= buffer.width || self.v0.y >= buffer.height {
+        if self.v0.x as usize >= buffer.width || self.v0.y as usize >= buffer.height {
             return;
         }
-        if self.v1.x >= buffer.width || self.v1.y >= buffer.height {
+        if self.v1.x as usize >= buffer.width || self.v1.y as usize >= buffer.height {
             return;
         }
 
@@ -81,6 +81,7 @@ impl Renderable for LineSegment<Vector3<usize>> {
     }
 }
 
+/*
 impl Renderable for LineSegment<Vector3<f32>> {
     /// Draw a colored line segment between two points
     fn render(&self, color: Color, buffer: &mut DisplayBuffer) {
@@ -110,6 +111,7 @@ impl Renderable for LineSegment<Vector3<f32>> {
         }
     }
 }
+*/
 
 /// Draw a filled bottom-flat triangle
 ///
@@ -167,8 +169,8 @@ fn fill_top_flat_triangle(
     let mut curr_x_2 = v2.x as f32;
 
     for y in v2.y..v0.y + 1 {
-        let scan_line_start: Vector3<usize> = Vector3::new(curr_x_1 as usize, y, v0.z);
-        let scan_line_end: Vector3<usize> = Vector3::new(curr_x_2 as usize, y, v0.z);
+        let scan_line_start = Vector3::new(curr_x_1, y as f32, triangle.v0.z);
+        let scan_line_end = Vector3::new(curr_x_2, y as f32, triangle.v0.z);
 
         let scan_line = LineSegment {
             v0: scan_line_start,
