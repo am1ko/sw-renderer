@@ -4,6 +4,7 @@ extern crate sfml;
 
 use na::{Vector3, Vector4};
 use renderer::*;
+use renderer::core::*;
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::system::Clock;
 use sfml::window::{Event, Key, Style, VideoMode};
@@ -72,7 +73,9 @@ fn main() {
     let mut cube2 = create_cube();
 
     cube.translate(Vector3::new(0.0, 0.0, -6.0));
-    cube2.translate(Vector3::new(0.0, 0.0, -24.0));
+    cube2.translate(Vector3::new(0.0, 0.0, -6.0));
+
+
 
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
@@ -155,6 +158,35 @@ fn main() {
 
         cube.render(eye_pos, lookat, &mut db);
         cube2.render(eye_pos, lookat, &mut db);
+
+        let color = renderer::core::Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        };
+        let scan_line_start = Vector3::new(20.0, 20.0, 0.0);
+        let scan_line_end = Vector3::new(120.0, 20.0, -3.0);
+        let scan_line = LineSegment {
+            v0: scan_line_start,
+            v1: scan_line_end,
+        };
+        scan_line.render(color, &mut db);
+
+        let color = renderer::core::Color {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        };
+        let scan_line_start = Vector3::new(20.0, 20.0, -3.0);
+        let scan_line_end = Vector3::new(120.0, 20.0, 0.0);
+        let scan_line = LineSegment {
+            v0: scan_line_start,
+            v1: scan_line_end,
+        };
+        scan_line.render(color, &mut db);
+
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
