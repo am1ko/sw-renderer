@@ -73,8 +73,8 @@ impl Renderable for LineSegment<Vector3<f32>> {
         let mut err: i32 = dx - dy;
 
         loop {
-            // todo z interpolation
-            buffer.set_pixel(x as usize, y as usize, self.v0.z, color);
+            let z = interpolate(x as f32, self.v1.z, self.v0.z, self.v1.x, self.v0.x);
+            buffer.set_pixel(x as usize, y as usize, z, color);
 
             if x == x2 && y == y2 {
                 break;
@@ -119,8 +119,8 @@ fn fill_bottom_flat_triangle(
     // Scan line ending x-coordinate
     let mut x_end: f32 = v0.x as f32;
 
-    for y in (v1.y..=v0.y).rev() {
-        // Interpolate the z-coordinate between two vertices of the triangle
+    // Loop y from top to bottom of the triangle
+    for y in (v1.y..=v0.y).rev(){
         let z_start = interpolate(y as f32, v0.z as f32, v1.z as f32, v0.y as f32, v1.y as f32);
         let z_end = interpolate(y as f32, v0.z as f32, v2.z as f32, v0.y as f32, v2.y as f32);
         let scan_line_start = Vector3::new(x_start, y as f32, z_start);
