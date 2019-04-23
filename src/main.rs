@@ -10,8 +10,8 @@ use sfml::system::Clock;
 use sfml::window::{Event, Key, Style, VideoMode};
 
 const FPS: f32 = 60.0;
-const WIN_WIDTH: usize = 320;
-const WIN_HEIGHT: usize = 240;
+const WIN_WIDTH: usize = 1024;
+const WIN_HEIGHT: usize = 768;
 
 fn create_cube() -> core::Mesh {
     let mut cube = core::Mesh::new();

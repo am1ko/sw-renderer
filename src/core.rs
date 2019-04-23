@@ -376,8 +376,8 @@ impl Mesh {
                 // Step 3: Camera to clip space
                 let triangle_camera = triangle_view.transform(projection);
 
-                println!("W {}", triangle_camera.v0.w);
-                println!("camera {}", triangle_camera.v0.z);
+                println!("triangle camera W {}", triangle_camera.v0.w);
+                println!("triangle camera z {}", triangle_camera.v0.z);
 
 
                 // Step 4.2: PERSPECTIVE DIVIDE (normalization)
@@ -387,21 +387,21 @@ impl Mesh {
                     v0: Vector3::new(
                         triangle_camera.v0.x / triangle_camera.v0.w,
                         triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z / triangle_camera.v0.w,
+                        triangle_camera.v0.z// / triangle_camera.v0.w,
                     ),
                     v1: Vector3::new(
                         triangle_camera.v1.x / triangle_camera.v1.w,
                         triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z / triangle_camera.v1.w,
+                        triangle_camera.v1.z// / triangle_camera.v1.w,
                     ),
                     v2: Vector3::new(
                         triangle_camera.v2.x / triangle_camera.v2.w,
                         triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z / triangle_camera.v2.w,
+                        triangle_camera.v2.z// / triangle_camera.v2.w,
                     ),
                 };
 
-                println!("ndc {}", t_ndc.v0.z);
+                println!("ndc z {}", t_ndc.v0.z);
 
 
                 // Step 5: Viewport transform
@@ -423,7 +423,7 @@ impl Mesh {
                     ),
                 };
 
-                println!("vp {}", t_viewport.v0.z);
+                println!("vp z {}", t_viewport.v0.z);
 
 
                 t_viewport.order_by_y();
