@@ -104,25 +104,28 @@ fn fill_bottom_flat_triangle(
     buffer: &mut DisplayBuffer,
 ) {
     // Top vertex
-    let v0 = triangle.to_i64().v0;
+    let v0 = triangle.v0;
+    let v0_i64 = triangle.to_i64().v0;
     // Bottom left vertex
-    let v1 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v1 } else {triangle.to_i64().v2};
+    let v1 = if triangle.v1.x < triangle.v2.x { triangle.v1 } else {triangle.v2};
+    let v1_i64 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v1 } else {triangle.to_i64().v2};
     // Bottom right vertex
-    let v2 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v2 } else {triangle.to_i64().v1};
+    let v2 = if triangle.v1.x < triangle.v2.x { triangle.v2 } else {triangle.v1};
+    let v2_i64 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v2 } else {triangle.to_i64().v1};
 
     // dx / dy for both edges of the triangle
-    let inv_slope_1 = (v0.x as f32 - v1.x as f32) / (v1.y as f32 - v0.y as f32);
-    let inv_slope_2 = (v0.x as f32 - v2.x as f32) / (v1.y as f32 - v0.y as f32);
+    let inv_slope_1 = (v0_i64.x as f32 - v1_i64.x as f32) / (v1_i64.y as f32 - v0_i64.y as f32 );
+    let inv_slope_2 = (v0_i64.x as f32 - v2_i64.x as f32 ) / (v1_i64.y as f32 - v0_i64.y as f32 );
 
     // Scan line starting x-coordinate
-    let mut x_start: f32 = v0.x as f32;
+    let mut x_start = v0_i64.x as f32;
     // Scan line ending x-coordinate
-    let mut x_end: f32 = v0.x as f32;
+    let mut x_end = v0_i64.x as f32;
 
     // Loop y from top to bottom of the triangle
-    for y in (v1.y..=v0.y).rev(){
-        let z_start = interpolate(y as f32, v0.z as f32, v1.z as f32, v0.y as f32, v1.y as f32);
-        let z_end = interpolate(y as f32, v0.z as f32, v2.z as f32, v0.y as f32, v2.y as f32);
+    for y in (v1_i64.y..=v0_i64.y).rev(){
+        let z_start = interpolate(y as f32, v0.z, v1.z, v0.y as f32, v1.y as f32);
+        let z_end = interpolate(y as f32, v0.z, v2.z, v0.y as f32, v2.y as f32);
         let scan_line_start = Vector3::new(x_start, y as f32, z_start);
         let scan_line_end = Vector3::new(x_end, y as f32, z_end);
 
@@ -149,23 +152,26 @@ fn fill_top_flat_triangle(
     buffer: &mut DisplayBuffer,
 ) {
     // Top left vertex
-    let v0 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v0 } else {triangle.to_i64().v1};
+    let v0 = if triangle.v0.x < triangle.v1.x { triangle.v0 } else {triangle.v1};
+    let v0_i64 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v0 } else {triangle.to_i64().v1};
     // Top right vertex
-    let v1 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v1 } else {triangle.to_i64().v0};
+    let v1 = if triangle.v0.x < triangle.v1.x { triangle.v1 } else {triangle.v0};
+    let v1_i64 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v1 } else {triangle.to_i64().v0};
     // Bottom vertex
-    let v2 = triangle.to_i64().v2;
+    let v2 = triangle.v2;
+    let v2_i64 = triangle.to_i64().v2;
 
     // dx / dy for both edges of the triangle
-    let inv_slope_1 = (v0.x as f32 - v2.x as f32) / (v2.y as f32 - v0.y as f32);
-    let inv_slope_2 = (v1.x as f32 - v2.x as f32) / (v2.y as f32 - v1.y as f32);
+    let inv_slope_1 = ((v0_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v0_i64.y as f32 )) as f32;
+    let inv_slope_2 = ((v1_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v1_i64.y as f32 )) as f32;
 
-    let mut x_start = v2.x as f32;
-    let mut x_end = v2.x as f32;
+    let mut x_start = v2_i64.x as f32;
+    let mut x_end = v2_i64.x as f32;
 
     // Loop y from bottom to top of the triangle
-    for y in v2.y..=v0.y {
-        let z_start = interpolate(y as f32, v0.z as f32, v2.z as f32, v0.y as f32, v2.y as f32);
-        let z_end = interpolate(y as f32, v1.z as f32, v2.z as f32, v1.y as f32, v2.y as f32);
+    for y in v2_i64.y..=v0_i64.y {
+        let z_start = interpolate(y as f32, v0.z, v2.z, v0.y as f32, v2.y as f32);
+        let z_end = interpolate(y as f32, v1.z, v2.z, v1.y as f32, v2.y as f32);
         let scan_line_start = Vector3::new(x_start, y as f32, z_start);
         let scan_line_end = Vector3::new(x_end, y as f32, z_end);
 
