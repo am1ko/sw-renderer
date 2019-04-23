@@ -75,11 +75,21 @@ impl Triangle<Vector3<f32>> {
         self.v1.y as i32 == self.v2.y as i32
     }
 
+    /// Convert to usize type
     pub fn to_usize(&self) -> Triangle<Vector3<usize>>{
         Triangle {
             v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),
             v1: Vector3::new(self.v1.x as usize, self.v1.y as usize, self.v1.z as usize),
             v2: Vector3::new(self.v2.x as usize, self.v2.y as usize, self.v2.z as usize),
+        }
+    }
+
+    /// Convert to i64 type
+    pub fn to_i64(&self) -> Triangle<Vector3<i64>> {
+        Triangle {
+            v0: Vector3::new(self.v0.x as i64, self.v0.y as i64, self.v0.z as i64),
+            v1: Vector3::new(self.v1.x as i64, self.v1.y as i64, self.v1.z as i64),
+            v2: Vector3::new(self.v2.x as i64, self.v2.y as i64, self.v2.z as i64),
         }
     }
 }
@@ -218,6 +228,9 @@ impl DisplayBuffer {
 
         if index < self.num_pixels() {
             if self.z_buffer[index] < z {
+                // always 1
+                // println!("{} over {}", z, self.z_buffer[index]);
+
                 self.z_buffer[index] = z;
                 self.data[index*self.bpp] = color.r;
                 self.data[index*self.bpp + 1] = color.g;
@@ -274,7 +287,7 @@ impl Mesh {
     ///
     /// * `eye` - Position of the camera eye
     /// * `buffer` - Display buffer (render target)
-    pub fn render(self: &Mesh, eye: Vector3<f32>, lookat: Vector3<f32>, buffer: &mut DisplayBuffer) {
+    pub fn render(self: &Mesh, eye: Vector3<f32>, lookat: Vector3<f32>, buffer: &mut DisplayBuffer, color: Color) {
         let m_rot_x = Matrix4::from_rows(
             &[
                 RowVector4::new(1.0, 0.0, 0.0, 0.0),
@@ -346,11 +359,10 @@ impl Mesh {
             // product is negative, the light is hitting the inner surface of
             // the mesh and we can simply ignore the triangle (not render it)
             if brightness > 0.0 {
-                let brightness = (brightness * 255.0) as u8;
                 let color = Color {
-                    r: brightness,
-                    g: brightness,
-                    b: brightness,
+                    r: (brightness*color.r as f32) as u8,
+                    g: (brightness*color.g as f32) as u8,
+                    b: (brightness*color.b as f32) as u8,
                     a: 255,
                 };
 
@@ -359,6 +371,10 @@ impl Mesh {
                 // Step 3: Camera to clip space
                 let triangle_camera = triangle_view.transform(projection);
 
+                if triangle_camera.v0.z != 1.0 {
+                    println!("camera {}", triangle_camera.v0.z)
+                }
+
                 // Step 4.2: PERSPECTIVE DIVIDE (normalization)
                 // Perspective division, far away points moved closer to origin
                 // To screen space. All visible points between [-1, 1].
@@ -366,19 +382,24 @@ impl Mesh {
                     v0: Vector3::new(
                         triangle_camera.v0.x / triangle_camera.v0.w,
                         triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z / triangle_camera.v0.w,
+                        triangle_camera.v0.z,
                     ),
                     v1: Vector3::new(
                         triangle_camera.v1.x / triangle_camera.v1.w,
                         triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z / triangle_camera.v1.w,
+                        triangle_camera.v1.z,
                     ),
                     v2: Vector3::new(
                         triangle_camera.v2.x / triangle_camera.v2.w,
                         triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z / triangle_camera.v2.w,
+                        triangle_camera.v2.z,
                     ),
                 };
+
+                if t_ndc.v0.z != 1.0 {
+                    println!("ndc {}", t_ndc.v0.z)
+                }
+
 
                 // Step 5: Viewport transform
                 let mut t_viewport = Triangle {
@@ -398,6 +419,11 @@ impl Mesh {
                         t_ndc.v2.z
                     ),
                 };
+
+                if t_viewport.v0.z != 1.0 {
+                    println!("vp {}", t_viewport.v0.z)
+                }
+
 
                 t_viewport.order_by_y();
                 t_viewport.render(color, buffer);

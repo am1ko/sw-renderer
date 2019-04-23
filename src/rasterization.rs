@@ -104,11 +104,11 @@ fn fill_bottom_flat_triangle(
     buffer: &mut DisplayBuffer,
 ) {
     // Top vertex
-    let v0 = triangle.to_usize().v0;
+    let v0 = triangle.to_i64().v0;
     // Bottom left vertex
-    let v1 = if triangle.v1.x < triangle.v2.x { triangle.to_usize().v1 } else {triangle.to_usize().v2};
+    let v1 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v1 } else {triangle.to_i64().v2};
     // Bottom right vertex
-    let v2 = if triangle.v1.x < triangle.v2.x { triangle.to_usize().v2 } else {triangle.to_usize().v1};
+    let v2 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v2 } else {triangle.to_i64().v1};
 
     // dx / dy for both edges of the triangle
     let inv_slope_1 = (v0.x as f32 - v1.x as f32) / (v1.y as f32 - v0.y as f32);
@@ -149,11 +149,11 @@ fn fill_top_flat_triangle(
     buffer: &mut DisplayBuffer,
 ) {
     // Top left vertex
-    let v0 = if triangle.v0.x < triangle.v1.x { triangle.to_usize().v0 } else {triangle.to_usize().v1};
+    let v0 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v0 } else {triangle.to_i64().v1};
     // Top right vertex
-    let v1 = if triangle.v0.x < triangle.v1.x { triangle.to_usize().v1 } else {triangle.to_usize().v0};
+    let v1 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v1 } else {triangle.to_i64().v0};
     // Bottom vertex
-    let v2 = triangle.to_usize().v2;
+    let v2 = triangle.to_i64().v2;
 
     // dx / dy for both edges of the triangle
     let inv_slope_1 = (v0.x as f32 - v2.x as f32) / (v2.y as f32 - v0.y as f32);

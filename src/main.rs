@@ -10,8 +10,8 @@ use sfml::system::Clock;
 use sfml::window::{Event, Key, Style, VideoMode};
 
 const FPS: f32 = 60.0;
-const WIN_WIDTH: usize = 2560;
-const WIN_HEIGHT: usize = 1440;
+const WIN_WIDTH: usize = 320;
+const WIN_HEIGHT: usize = 240;
 
 fn create_cube() -> core::Mesh {
     let mut cube = core::Mesh::new();
@@ -74,8 +74,6 @@ fn main() {
 
     cube.translate(Vector3::new(0.0, 0.0, -6.0));
     cube2.translate(Vector3::new(0.0, 0.0, -6.0));
-
-
 
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
@@ -151,20 +149,27 @@ fn main() {
         let lookat_y = (mouse_y as f32 - ((WIN_HEIGHT/2) as f32)) / (WIN_HEIGHT as f32);
         let _lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
         let lookat = Vector3::new(0.0, 0.0, -10.0);
+        let red = renderer::core::Color { r: 255, g: 0, b: 0, a: 255};
+        let green = renderer::core::Color { r: 0, g: 255, b: 0, a: 255};
 
         db.clear();
         cube.rotate(Vector3::new(0.001, 0.001, 0.001));
         cube2.rotate(Vector3::new(-0.001, -0.001, -0.001));
 
-        cube.render(eye_pos, lookat, &mut db);
-        cube2.render(eye_pos, lookat, &mut db);
+        cube.render(eye_pos, lookat, &mut db, red);
+        cube2.render(eye_pos, lookat, &mut db, green);
 
-        let color = renderer::core::Color {
-            r: 255,
-            g: 0,
-            b: 0,
-            a: 255,
-        };
+
+        // let triangle = Triangle {
+        //     v0: Vector3::new(160.0, 239.0, -3.0),
+        //     v1: Vector3::new(0.0, 0.0, -3.0),
+        //     v2: Vector3::new(319.0, 0.0, -3.0),
+        // };
+
+        // triangle.render(color, &mut db);
+
+
+        /*
         let scan_line_start = Vector3::new(20.0, 20.0, 0.0);
         let scan_line_end = Vector3::new(120.0, 20.0, -3.0);
         let scan_line = LineSegment {
@@ -172,13 +177,17 @@ fn main() {
             v1: scan_line_end,
         };
         scan_line.render(color, &mut db);
+        */
 
-        let color = renderer::core::Color {
-            r: 0,
-            g: 255,
-            b: 0,
-            a: 255,
-        };
+
+        // let triangle = Triangle {
+        //     v0: Vector3::new(160.0, 239.0, -4.0),
+        //     v1: Vector3::new(0.0, 0.0, 3.0),
+        //     v2: Vector3::new(319.0, 0.0, 3.0),
+        // };
+
+        // triangle.render(color, &mut db);
+        /*
         let scan_line_start = Vector3::new(20.0, 20.0, -3.0);
         let scan_line_end = Vector3::new(120.0, 20.0, 0.0);
         let scan_line = LineSegment {
@@ -186,6 +195,7 @@ fn main() {
             v1: scan_line_end,
         };
         scan_line.render(color, &mut db);
+        */
 
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
