@@ -365,15 +365,20 @@ impl Mesh {
                     b: (brightness*color.b as f32) as u8,
                     a: 255,
                 };
+                println!("triangle world W {}", triangle_world.v0.w);
 
                 // Step 2: World to camera space
                 let triangle_view = triangle_world.transform(view);
+
+                println!("triangle view W {}", triangle_view.v0.w);
+                println!("triangle view z {}", triangle_view.v0.z);
+
                 // Step 3: Camera to clip space
                 let triangle_camera = triangle_view.transform(projection);
 
-                if triangle_camera.v0.z != 1.0 {
-                    println!("camera {}", triangle_camera.v0.z)
-                }
+                println!("W {}", triangle_camera.v0.w);
+                println!("camera {}", triangle_camera.v0.z);
+
 
                 // Step 4.2: PERSPECTIVE DIVIDE (normalization)
                 // Perspective division, far away points moved closer to origin
@@ -382,23 +387,21 @@ impl Mesh {
                     v0: Vector3::new(
                         triangle_camera.v0.x / triangle_camera.v0.w,
                         triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z,
+                        triangle_camera.v0.z / triangle_camera.v0.w,
                     ),
                     v1: Vector3::new(
                         triangle_camera.v1.x / triangle_camera.v1.w,
                         triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z,
+                        triangle_camera.v1.z / triangle_camera.v1.w,
                     ),
                     v2: Vector3::new(
                         triangle_camera.v2.x / triangle_camera.v2.w,
                         triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z,
+                        triangle_camera.v2.z / triangle_camera.v2.w,
                     ),
                 };
 
-                if t_ndc.v0.z != 1.0 {
-                    println!("ndc {}", t_ndc.v0.z)
-                }
+                println!("ndc {}", t_ndc.v0.z);
 
 
                 // Step 5: Viewport transform
@@ -420,9 +423,7 @@ impl Mesh {
                     ),
                 };
 
-                if t_viewport.v0.z != 1.0 {
-                    println!("vp {}", t_viewport.v0.z)
-                }
+                println!("vp {}", t_viewport.v0.z);
 
 
                 t_viewport.order_by_y();
