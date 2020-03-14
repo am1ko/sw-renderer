@@ -179,10 +179,12 @@ fn main() {
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
-            texture.update_from_pixels(&*db.data, db.width as u32, db.height as u32, 0, 0);
+            unsafe {
+                texture.update_from_pixels(&*db.data, db.width as u32, db.height as u32, 0, 0);
+            }
             sprite.set_texture(&texture, false);
 
-            window.clear(&Color::BLACK);
+            window.clear(Color::BLACK);
             window.draw(&sprite);
             window.display();
         }
