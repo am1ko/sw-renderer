@@ -1,12 +1,18 @@
 extern crate nalgebra as na;
 extern crate renderer;
 extern crate sfml;
+extern crate obj;
 
+use std::env;
 use na::{Vector3, Vector4};
 use renderer::*;
 use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
 use sfml::system::Clock;
 use sfml::window::{Event, Key, Style, VideoMode};
+
+use std::fs::File;
+use std::io::BufReader;
+use obj::*;
 
 const FPS: f32 = 60.0;
 const WIN_WIDTH: usize = 1024;
@@ -60,6 +66,21 @@ fn create_cube() -> core::Mesh {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 2 {
+        println!("Usage: renderer [FILE]");
+        return;
+    }
+
+    let f = match File::open(&args[1]) {
+        Ok(v) => v,
+        Err(_e) => {
+            println!("Error: Could not open file {}", args[1]);
+            return;
+        }
+    };
+
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
     let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
@@ -67,6 +88,14 @@ fn main() {
     window.set_vertical_sync_enabled(true);
 
     let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
+
+    let input = BufReader::new(f);
+    let model: Obj = load_obj(input).unwrap();
+
+    println!("{}", model.name.unwrap());
+
+    // model.vertices;
+    // model.indices;
 
     let mut cube = create_cube();
 
