@@ -75,7 +75,7 @@ impl Triangle<Vector3<f32>> {
     }
 
     /// Convert to usize type
-    pub fn to_usize(&self) -> Triangle<Vector3<usize>>{
+    pub fn to_usize(&self) -> Triangle<Vector3<usize>> {
         Triangle {
             v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),
             v1: Vector3::new(self.v1.x as usize, self.v1.y as usize, self.v1.z as usize),
@@ -101,14 +101,12 @@ fn build_perspective_matrix(n: f32, f: f32, angle_of_view: f32, aspect_ratio: f3
     let b = -size / aspect_ratio;
     let t = size / aspect_ratio;
 
-    return Matrix4::from_rows(
-        &[
-            RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
-            RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
-            RowVector4::new(0.0, 0.0, -(f + n) / (f - n), -(2.0 * f * n) / (f - n)),
-            RowVector4::new(0.0, 0.0, -1.0, 0.0),
-        ],
-    );
+    return Matrix4::from_rows(&[
+        RowVector4::new(2.0 * n / (r - l), 0.0, (r + l) / (r - l), 0.0),
+        RowVector4::new(0.0, 2.0 * n / (t - b), (t + b) / (t - b), 0.0),
+        RowVector4::new(0.0, 0.0, -(f + n) / (f - n), -(2.0 * f * n) / (f - n)),
+        RowVector4::new(0.0, 0.0, -1.0, 0.0),
+    ]);
 }
 
 fn build_view_matrix(eye: Vector3<f32>, lookat: Vector3<f32>, up: Vector3<f32>) -> Matrix4<f32> {
@@ -126,25 +124,21 @@ fn build_view_matrix(eye: Vector3<f32>, lookat: Vector3<f32>, up: Vector3<f32>) 
 
     // This is an orientation matrix that is transposed. Transpose effectively performs
     // inversion. This achieves the effect that the world rotates around the camera
-    let rotation = Matrix4::from_rows(
-        &[
-            RowVector4::new(x.x, x.y, x.z, 0.0),
-            RowVector4::new(y.x, y.y, y.z, 0.0),
-            RowVector4::new(z.x, z.y, z.z, 0.0),
-            RowVector4::new(0.0, 0.0, 0.0, 1.0),
-        ],
-    );
+    let rotation = Matrix4::from_rows(&[
+        RowVector4::new(x.x, x.y, x.z, 0.0),
+        RowVector4::new(y.x, y.y, y.z, 0.0),
+        RowVector4::new(z.x, z.y, z.z, 0.0),
+        RowVector4::new(0.0, 0.0, 0.0, 1.0),
+    ]);
 
     // Translate to the inverse of the eye position (the world moves in the opposite direction
     // around the camera that is fixed)
-    let translation = Matrix4::from_rows(
-        &[
-            RowVector4::new(1.0, 0.0, 0.0, -eye.x),
-            RowVector4::new(0.0, 1.0, 0.0, -eye.y),
-            RowVector4::new(0.0, 0.0, 1.0, -eye.z),
-            RowVector4::new(0.0, 0.0, 0.0, 1.0),
-        ],
-    );
+    let translation = Matrix4::from_rows(&[
+        RowVector4::new(1.0, 0.0, 0.0, -eye.x),
+        RowVector4::new(0.0, 1.0, 0.0, -eye.y),
+        RowVector4::new(0.0, 0.0, 1.0, -eye.z),
+        RowVector4::new(0.0, 0.0, 0.0, 1.0),
+    ]);
 
     // Use inverse multiplication order to produce inversed combined matrix
     return rotation * translation;
@@ -174,7 +168,7 @@ pub struct DisplayBuffer {
     /// Contents of the buffer (pixel data)
     pub data: Box<[u8]>,
     /// Z/depth buffer
-    pub z_buffer: Box<[f32]>
+    pub z_buffer: Box<[f32]>,
 }
 
 impl DisplayBuffer {
@@ -195,7 +189,7 @@ impl DisplayBuffer {
 
     /// return the number of pixels
     pub fn num_pixels(&self) -> usize {
-        return self.height*self.width;
+        return self.height * self.width;
     }
 
     /// Reset the contents of the buffer so that all pixels are black
@@ -203,14 +197,6 @@ impl DisplayBuffer {
         self.data = vec![0; self.width * self.height * self.bpp].into_boxed_slice();
         // this takes a lot of time when the initialization value is not 0.0
         self.z_buffer = vec![std::f32::MIN; self.width * self.height].into_boxed_slice();
-        // faster version
-        // unsafe {
-            // libc::memset(
-                // self.z_buffer.as_mut_ptr() as _,
-                // std::f32::MIN as i32,
-                // self.z_buffer.len() * mem::size_of::<f32>(),
-            // );
-        // }
     }
 
     /// Set a single pixel to a desired color
@@ -228,10 +214,10 @@ impl DisplayBuffer {
         if index < self.num_pixels() {
             if self.z_buffer[index] < z {
                 self.z_buffer[index] = z;
-                self.data[index*self.bpp] = color.r;
-                self.data[index*self.bpp + 1] = color.g;
-                self.data[index*self.bpp + 2] = color.b;
-                self.data[index*self.bpp + 3] = color.a;
+                self.data[index * self.bpp] = color.r;
+                self.data[index * self.bpp + 1] = color.g;
+                self.data[index * self.bpp + 2] = color.b;
+                self.data[index * self.bpp + 3] = color.a;
             }
         }
     }
@@ -239,42 +225,24 @@ impl DisplayBuffer {
 
 /// A mesh is a collection of triangles that form a 3D surface
 pub struct Mesh {
-    /// Individual vertices that make up the surface of the mesh. Each vertex is
-    /// a 4D vector [x, y, z, w]
-    pub vertices: Vec<Vector4<f32>>,
-    /// Specifies which vertices make a single polygon.
-    pub poly_indices: Vec<[i32; 3]>,
     /// World position of the center of the mesh
     pub position: Vector4<f32>,
     /// Rotation of the mesh around all 3 axis vectors
     pub angle: Vector3<f32>,
-    /// Triangles that make up the mesh surface
-    pub triangles: Vec<Triangle<Vector4<f32>>>,
+    /// Triangle faces that make up the mesh surface
+    pub faces: Vec<Triangle<Vector4<f32>>>,
     /// Unit normal vectors of each triangle
-    pub triangle_normals: Vec<Vector3<f32>>,
+    pub face_normals: Vec<Vector3<f32>>,
 }
 
 impl Mesh {
     pub fn new() -> Mesh {
         return Mesh {
-            vertices: Vec::new(),
-            poly_indices: Vec::new(),
             position: Vector4::new(0.0, 0.0, 0.0, 1.0),
             angle: Vector3::new(0.0, 0.0, 0.0),
-            triangles: Vec::new(),
-            triangle_normals: Vec::new(),
+            faces: Vec::new(),
+            face_normals: Vec::new(),
         };
-    }
-
-    /// Builds triangles out of the vertices of the mesh
-    pub fn to_triangles(self: &mut Mesh) {
-        for p in self.poly_indices.iter() {
-            self.triangles.push(Triangle {
-                v0: self.vertices[p[0] as usize],
-                v1: self.vertices[p[1] as usize],
-                v2: self.vertices[p[2] as usize],
-            });
-        }
     }
 
     /// Render a mesh into a display buffer
@@ -283,71 +251,64 @@ impl Mesh {
     ///
     /// * `eye` - Position of the camera eye
     /// * `buffer` - Display buffer (render target)
-    pub fn render(self: &Mesh, eye: Vector3<f32>, lookat: Vector3<f32>, buffer: &mut DisplayBuffer, color: Color) {
-        let m_rot_x = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                RowVector4::new(0.0, self.angle.x.cos(), self.angle.x.sin(), 0.0),
-                RowVector4::new(0.0, -self.angle.x.sin(), self.angle.x.cos(), 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
-        let m_rot_y = Matrix4::from_rows(
-            &[
-                RowVector4::new(self.angle.y.cos(), 0.0, -self.angle.y.sin(), 0.0),
-                RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                RowVector4::new(self.angle.y.sin(), 0.0, self.angle.y.cos(), 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
-        let m_rot_z = Matrix4::from_rows(
-            &[
-                RowVector4::new(self.angle.z.cos(), -self.angle.z.sin(), 0.0, 0.0),
-                RowVector4::new(self.angle.z.sin(), self.angle.z.cos(), 0.0, 0.0),
-                RowVector4::new(0.0, 0.0, 1.0, 0.0),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+    pub fn render(
+        self: &Mesh,
+        eye: Vector3<f32>,
+        lookat: Vector3<f32>,
+        buffer: &mut DisplayBuffer,
+        color: Color,
+    ) {
+        let m_rot_x = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, 0.0),
+            RowVector4::new(0.0, self.angle.x.cos(), self.angle.x.sin(), 0.0),
+            RowVector4::new(0.0, -self.angle.x.sin(), self.angle.x.cos(), 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
+        let m_rot_y = Matrix4::from_rows(&[
+            RowVector4::new(self.angle.y.cos(), 0.0, -self.angle.y.sin(), 0.0),
+            RowVector4::new(0.0, 1.0, 0.0, 0.0),
+            RowVector4::new(self.angle.y.sin(), 0.0, self.angle.y.cos(), 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
+        let m_rot_z = Matrix4::from_rows(&[
+            RowVector4::new(self.angle.z.cos(), -self.angle.z.sin(), 0.0, 0.0),
+            RowVector4::new(self.angle.z.sin(), self.angle.z.cos(), 0.0, 0.0),
+            RowVector4::new(0.0, 0.0, 1.0, 0.0),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
 
-        let m_trans = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, self.position.x),
-                RowVector4::new(0.0, 1.0, 0.0, self.position.y),
-                RowVector4::new(0.0, 0.0, 1.0, self.position.z),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+        let m_trans = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, self.position.x),
+            RowVector4::new(0.0, 1.0, 0.0, self.position.y),
+            RowVector4::new(0.0, 0.0, 1.0, self.position.z),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
 
         let model = m_trans * m_rot_z * m_rot_y * m_rot_x;
         let aspect_ratio = (buffer.width as f32) / (buffer.height as f32);
-        let view: Matrix4<f32> =
-            build_view_matrix(eye, lookat, Vector3::new(0.0, 1.0, 0.0));
+        let view: Matrix4<f32> = build_view_matrix(eye, lookat, Vector3::new(0.0, 1.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1, 5.0, 78.0, aspect_ratio);
 
-        // loop through all polygons, each consists of 3 vertices
-        for (i, t) in self.triangles.iter().enumerate() {
-            let triangle_world = t.transform(model);
+        for (i, t) in self.faces.iter().enumerate() {
+            let face_world = t.transform(model);
 
-            // lighting
-            let reduce_dim = Matrix3x4::from_rows(
-                &[
-                    RowVector4::new(1.0, 0.0, 0.0, 0.0),
-                    RowVector4::new(0.0, 1.0, 0.0, 0.0),
-                    RowVector4::new(0.0, 0.0, 1.0, 0.0),
-                ],
-            );
+            let reduce_dim = Matrix3x4::from_rows(&[
+                RowVector4::new(1.0, 0.0, 0.0, 0.0),
+                RowVector4::new(0.0, 1.0, 0.0, 0.0),
+                RowVector4::new(0.0, 0.0, 1.0, 0.0),
+            ]);
             let triangle_world_3d = Triangle {
-                v0: reduce_dim * triangle_world.v0,
-                v1: reduce_dim * triangle_world.v1,
-                v2: reduce_dim * triangle_world.v2,
+                v0: reduce_dim * face_world.v0,
+                v1: reduce_dim * face_world.v1,
+                v2: reduce_dim * face_world.v2,
             };
 
             // Light vector is a unit vector from the mesh to the light source.
-            let n = self.triangle_normals[i];
-            let n = model*Vector4::new(n.x, n.y, n.z, 0.0);
-            let triangle_normal = Vector3::new(n.x, n.y, n.z);
+            let n = self.face_normals[i];
+            let n = model * Vector4::new(n.x, n.y, n.z, 0.0);
+            let n = Vector3::new(n.x, n.y, n.z);
             let light_vector = (eye - triangle_world_3d.center_point()).normalize();
-            let brightness = light_vector.dot(&triangle_normal);
+            let brightness = light_vector.dot(&n);
 
             // If the dot product is positive, the light is hitting the outer
             // surface of the mesh. In this case the value of the dot product
@@ -356,14 +317,14 @@ impl Mesh {
             // the mesh and we can simply ignore the triangle (not render it)
             if brightness > 0.0 {
                 let color = Color {
-                    r: (brightness*color.r as f32) as u8,
-                    g: (brightness*color.g as f32) as u8,
-                    b: (brightness*color.b as f32) as u8,
+                    r: (brightness * color.r as f32) as u8,
+                    g: (brightness * color.g as f32) as u8,
+                    b: (brightness * color.b as f32) as u8,
                     a: 255,
                 };
 
                 // Step 2: World to camera space
-                let triangle_view = triangle_world.transform(view);
+                let triangle_view = face_world.transform(view);
 
                 // Step 3: Camera to clip space
                 let triangle_camera = triangle_view.transform(projection);
@@ -375,17 +336,17 @@ impl Mesh {
                     v0: Vector3::new(
                         triangle_camera.v0.x / triangle_camera.v0.w,
                         triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z// / triangle_camera.v0.w,
+                        triangle_camera.v0.z, // / triangle_camera.v0.w,
                     ),
                     v1: Vector3::new(
                         triangle_camera.v1.x / triangle_camera.v1.w,
                         triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z// / triangle_camera.v1.w,
+                        triangle_camera.v1.z, // / triangle_camera.v1.w,
                     ),
                     v2: Vector3::new(
                         triangle_camera.v2.x / triangle_camera.v2.w,
                         triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z// / triangle_camera.v2.w,
+                        triangle_camera.v2.z, // / triangle_camera.v2.w,
                     ),
                 };
 
@@ -394,28 +355,23 @@ impl Mesh {
                     v0: Vector3::new(
                         (1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32,
                         (1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v0.z
+                        t_ndc.v0.z,
                     ),
                     v1: Vector3::new(
                         (1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32,
                         (1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v1.z
+                        t_ndc.v1.z,
                     ),
                     v2: Vector3::new(
                         (1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32,
                         (1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v2.z
+                        t_ndc.v2.z,
                     ),
                 };
 
                 t_viewport.order_by_y();
                 t_viewport.render(color, buffer);
             }
-
-            // wireframe rendering
-            // rasterization::draw_line_usize(p1, p2, color, buffer);
-            // rasterization::draw_line_usize(p2, p3, color, buffer);
-            // rasterization::draw_line_usize(p3, p1, color, buffer);
         }
     }
 
@@ -425,14 +381,12 @@ impl Mesh {
     ///
     /// * `translation` - Vector that specifies the desired displacement
     pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
-        let xform = Matrix4::from_rows(
-            &[
-                RowVector4::new(1.0, 0.0, 0.0, translation.x),
-                RowVector4::new(0.0, 1.0, 0.0, translation.y),
-                RowVector4::new(0.0, 0.0, 1.0, translation.z),
-                RowVector4::new(0.0, 0.0, 0.0, 1.0),
-            ],
-        );
+        let xform = Matrix4::from_rows(&[
+            RowVector4::new(1.0, 0.0, 0.0, translation.x),
+            RowVector4::new(0.0, 1.0, 0.0, translation.y),
+            RowVector4::new(0.0, 0.0, 1.0, translation.z),
+            RowVector4::new(0.0, 0.0, 0.0, 1.0),
+        ]);
         self.position = xform * self.position;
     }
 
