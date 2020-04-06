@@ -7,6 +7,7 @@ authors = ["Mikko Ala-Louko <mikko.alalouko@gmail.com>"]
 sfml = "*"
 nalgebra = '*'
 libc = "*"
+obj-rs = "0.5"
 
 [lib]
 name = "renderer"
