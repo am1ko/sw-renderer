@@ -36,7 +36,7 @@ fn main() {
 
     let mut clock = Clock::start();
     let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    let mut window = RenderWindow::new(vm, "GFX demo", Style::CLOSE, &Default::default());
+    let mut window = RenderWindow::new(vm, "sw-renderer", Style::CLOSE, &Default::default());
 
     window.set_vertical_sync_enabled(true);
 
@@ -48,11 +48,13 @@ fn main() {
 
     let mut f = 0;
     while f < obj.indices.len() {
+        assert!(f + 2 < obj.indices.len());
+
         let i = obj.indices[f] as usize;
         let j = obj.indices[f + 1] as usize;
         let k = obj.indices[f + 2] as usize;
 
-        model.triangles.push(core::Triangle {
+        model.faces.push(core::Triangle {
             v0: Vector4::new(
                 obj.vertices[i].position[0],
                 obj.vertices[i].position[1],
@@ -73,7 +75,7 @@ fn main() {
             ),
         });
 
-        model.triangle_normals.append(&mut vec![Vector3::new(
+        model.face_normals.append(&mut vec![Vector3::new(
             obj.vertices[i].normal[0],
             obj.vertices[i].normal[1],
             obj.vertices[i].normal[2],

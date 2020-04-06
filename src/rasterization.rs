@@ -1,5 +1,5 @@
 use core::{Color, DisplayBuffer, LineSegment, Renderable, Triangle};
-use na::{Vector3};
+use na::Vector3;
 
 /// Interpolate a 1D function
 ///
@@ -9,7 +9,7 @@ use na::{Vector3};
 /// * 'x0' Lower bound of X
 /// * 'x1' Upper bound of X
 fn interpolate(x: f32, y1: f32, y0: f32, x1: f32, x0: f32) -> f32 {
-    y0 + (x - x0)*(y1 - y0)/(x1-x0)
+    y0 + (x - x0) * (y1 - y0) / (x1 - x0)
 }
 
 impl Renderable for Triangle<Vector3<f32>> {
@@ -21,8 +21,13 @@ impl Renderable for Triangle<Vector3<f32>> {
         let p2 = triangle.v1;
         let p3 = triangle.v2;
 
-        if p1.x >= buffer.width || p1.y >= buffer.height || p2.x >= buffer.width ||
-            p2.y >= buffer.height || p3.x >= buffer.width || p3.y >= buffer.height {
+        if p1.x >= buffer.width
+            || p1.y >= buffer.height
+            || p2.x >= buffer.width
+            || p2.y >= buffer.height
+            || p3.x >= buffer.width
+            || p3.y >= buffer.height
+        {
             return;
         }
 
@@ -32,7 +37,8 @@ impl Renderable for Triangle<Vector3<f32>> {
             fill_bottom_flat_triangle(&self, color, buffer);
         } else {
             // split the triangle into two: a bottom flat one and a top flat one
-            let x4 = self.v0.x + (self.v0.y - self.v1.y) / (self.v0.y - self.v2.y) * (self.v2.x - self.v0.x);
+            let x4 = self.v0.x
+                + (self.v0.y - self.v1.y) / (self.v0.y - self.v2.y) * (self.v2.x - self.v0.x);
             let v_middle = Vector3::new(x4, self.v1.y, self.v1.z);
 
             let bottom_flat = Triangle {
@@ -107,15 +113,31 @@ fn fill_bottom_flat_triangle(
     let v0 = triangle.v0;
     let v0_i64 = triangle.to_i64().v0;
     // Bottom left vertex
-    let v1 = if triangle.v1.x < triangle.v2.x { triangle.v1 } else {triangle.v2};
-    let v1_i64 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v1 } else {triangle.to_i64().v2};
+    let v1 = if triangle.v1.x < triangle.v2.x {
+        triangle.v1
+    } else {
+        triangle.v2
+    };
+    let v1_i64 = if triangle.v1.x < triangle.v2.x {
+        triangle.to_i64().v1
+    } else {
+        triangle.to_i64().v2
+    };
     // Bottom right vertex
-    let v2 = if triangle.v1.x < triangle.v2.x { triangle.v2 } else {triangle.v1};
-    let v2_i64 = if triangle.v1.x < triangle.v2.x { triangle.to_i64().v2 } else {triangle.to_i64().v1};
+    let v2 = if triangle.v1.x < triangle.v2.x {
+        triangle.v2
+    } else {
+        triangle.v1
+    };
+    let v2_i64 = if triangle.v1.x < triangle.v2.x {
+        triangle.to_i64().v2
+    } else {
+        triangle.to_i64().v1
+    };
 
     // dx / dy for both edges of the triangle
-    let inv_slope_1 = (v0_i64.x as f32 - v1_i64.x as f32) / (v1_i64.y as f32 - v0_i64.y as f32 );
-    let inv_slope_2 = (v0_i64.x as f32 - v2_i64.x as f32 ) / (v1_i64.y as f32 - v0_i64.y as f32 );
+    let inv_slope_1 = (v0_i64.x as f32 - v1_i64.x as f32) / (v1_i64.y as f32 - v0_i64.y as f32);
+    let inv_slope_2 = (v0_i64.x as f32 - v2_i64.x as f32) / (v1_i64.y as f32 - v0_i64.y as f32);
 
     // Scan line starting x-coordinate
     let mut x_start = v0_i64.x as f32;
@@ -123,7 +145,7 @@ fn fill_bottom_flat_triangle(
     let mut x_end = v0_i64.x as f32;
 
     // Loop y from top to bottom of the triangle
-    for y in (v1_i64.y..=v0_i64.y).rev(){
+    for y in (v1_i64.y..=v0_i64.y).rev() {
         let z_start = interpolate(y as f32, v0.z, v1.z, v0.y as f32, v1.y as f32);
         let z_end = interpolate(y as f32, v0.z, v2.z, v0.y as f32, v2.y as f32);
         let scan_line_start = Vector3::new(x_start, y as f32, z_start);
@@ -152,18 +174,36 @@ fn fill_top_flat_triangle(
     buffer: &mut DisplayBuffer,
 ) {
     // Top left vertex
-    let v0 = if triangle.v0.x < triangle.v1.x { triangle.v0 } else {triangle.v1};
-    let v0_i64 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v0 } else {triangle.to_i64().v1};
+    let v0 = if triangle.v0.x < triangle.v1.x {
+        triangle.v0
+    } else {
+        triangle.v1
+    };
+    let v0_i64 = if triangle.v0.x < triangle.v1.x {
+        triangle.to_i64().v0
+    } else {
+        triangle.to_i64().v1
+    };
     // Top right vertex
-    let v1 = if triangle.v0.x < triangle.v1.x { triangle.v1 } else {triangle.v0};
-    let v1_i64 = if triangle.v0.x < triangle.v1.x { triangle.to_i64().v1 } else {triangle.to_i64().v0};
+    let v1 = if triangle.v0.x < triangle.v1.x {
+        triangle.v1
+    } else {
+        triangle.v0
+    };
+    let v1_i64 = if triangle.v0.x < triangle.v1.x {
+        triangle.to_i64().v1
+    } else {
+        triangle.to_i64().v0
+    };
     // Bottom vertex
     let v2 = triangle.v2;
     let v2_i64 = triangle.to_i64().v2;
 
     // dx / dy for both edges of the triangle
-    let inv_slope_1 = ((v0_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v0_i64.y as f32 )) as f32;
-    let inv_slope_2 = ((v1_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v1_i64.y as f32 )) as f32;
+    let inv_slope_1 =
+        ((v0_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v0_i64.y as f32)) as f32;
+    let inv_slope_2 =
+        ((v1_i64.x as f32 - v2_i64.x as f32) / (v2_i64.y as f32 - v1_i64.y as f32)) as f32;
 
     let mut x_start = v2_i64.x as f32;
     let mut x_end = v2_i64.x as f32;
