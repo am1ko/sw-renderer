@@ -14,81 +14,54 @@ use na::{Matrix3x4, Matrix4, RowVector4, Vector3, Vector4};
 pub trait Renderable {
     /// Draw the model to a display buffer (render target)
     ///
-    /// * `color` - Color to use
     /// * `buffer` - Display buffer (render target)
-    fn render(&self, color: Color, buffer: &mut DisplayBuffer);
+    fn render(&self, buffer: &mut DisplayBuffer);
 }
 
-pub struct Triangle<T> {
-    /// Vertex of a triangle (largest y-coordinate)
-    pub v0: T,
+#[derive(Copy, Clone)]
+pub struct Vertex<T: Copy> {
+    /// Color of the vertex
+    pub color: Color,
+    /// Position of the vertex
+    pub position: T,
+    /// Normal vector of the vertex
+    pub normal: Vector3<f32>,
+}
+
+pub struct Face<T: Copy> {
     /// Vertex of a triangle
-    pub v1: T,
-    /// Vertex of a triangle (smallest y-coordinate)
-    pub v2: T,
+    pub v0: Vertex<T>,
+    /// Vertex of a triangle
+    pub v1: Vertex<T>,
+    /// Vertex of a triangle
+    pub v2: Vertex<T>,
 }
 
-pub struct LineSegment<T> {
-    /// End point of line segment
-    pub v0: T,
-    /// End point of line segment
-    pub v1: T,
-}
-
-impl Triangle<Vector4<f32>> {
+impl Face<Vector4<f32>> {
     /// Perform a linear transformation to all vertices of the triangle
-    pub fn transform(&self, m: Matrix4<f32>) -> Triangle<Vector4<f32>> {
-        Triangle {
-            v0: m * self.v0,
-            v1: m * self.v1,
-            v2: m * self.v2,
-        }
-    }
-}
+    pub fn transform(&self, m: Matrix4<f32>) -> Face<Vector4<f32>> {
+        let m_normal = m
+            .fixed_slice::<nalgebra::U3, nalgebra::U3>(0, 0)
+            .try_inverse()
+            .expect("Could not invert matrix")
+            .transpose();
 
-impl Triangle<Vector3<f32>> {
-    /// Return the center point of the triangle
-    pub fn center_point(&self) -> Vector3<f32> {
-        Vector3::new(
-            (self.v0.x + self.v1.x + self.v2.x) / 3.0,
-            (self.v0.y + self.v1.y + self.v2.y) / 3.0,
-            (self.v0.z + self.v1.z + self.v2.z) / 3.0,
-        )
-    }
-
-    pub fn order_by_y(&mut self) {
-        let mut ordered = [self.v0, self.v1, self.v2];
-        ordered.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
-        self.v0 = ordered[2];
-        self.v1 = ordered[1];
-        self.v2 = ordered[0];
-    }
-
-    /// Return true if the triangle is top-flat
-    pub fn is_top_flat(&self) -> bool {
-        self.v0.y as i32 == self.v1.y as i32
-    }
-
-    /// Return true if the triangle is bottom-flat
-    pub fn is_bottom_flat(&self) -> bool {
-        self.v1.y as i32 == self.v2.y as i32
-    }
-
-    /// Convert to usize type
-    pub fn to_usize(&self) -> Triangle<Vector3<usize>> {
-        Triangle {
-            v0: Vector3::new(self.v0.x as usize, self.v0.y as usize, self.v0.z as usize),
-            v1: Vector3::new(self.v1.x as usize, self.v1.y as usize, self.v1.z as usize),
-            v2: Vector3::new(self.v2.x as usize, self.v2.y as usize, self.v2.z as usize),
-        }
-    }
-
-    /// Convert to i64 type
-    pub fn to_i64(&self) -> Triangle<Vector3<i64>> {
-        Triangle {
-            v0: Vector3::new(self.v0.x as i64, self.v0.y as i64, self.v0.z as i64),
-            v1: Vector3::new(self.v1.x as i64, self.v1.y as i64, self.v1.z as i64),
-            v2: Vector3::new(self.v2.x as i64, self.v2.y as i64, self.v2.z as i64),
+        Face {
+            v0: Vertex {
+                position: m * self.v0.position,
+                color: self.v0.color,
+                normal: m_normal * self.v0.normal,
+            },
+            v1: Vertex {
+                position: m * self.v1.position,
+                color: self.v1.color,
+                normal: m_normal * self.v1.normal,
+            },
+            v2: Vertex {
+                position: m * self.v2.position,
+                color: self.v2.color,
+                normal: m_normal * self.v2.normal,
+            },
         }
     }
 }
@@ -230,9 +203,7 @@ pub struct Mesh {
     /// Rotation of the mesh around all 3 axis vectors
     pub angle: Vector3<f32>,
     /// Triangle faces that make up the mesh surface
-    pub faces: Vec<Triangle<Vector4<f32>>>,
-    /// Unit normal vectors of each triangle
-    pub face_normals: Vec<Vector3<f32>>,
+    pub faces: Vec<Face<Vector4<f32>>>,
 }
 
 impl Mesh {
@@ -241,7 +212,6 @@ impl Mesh {
             position: Vector4::new(0.0, 0.0, 0.0, 1.0),
             angle: Vector3::new(0.0, 0.0, 0.0),
             faces: Vec::new(),
-            face_normals: Vec::new(),
         };
     }
 
@@ -256,7 +226,6 @@ impl Mesh {
         eye: Vector3<f32>,
         lookat: Vector3<f32>,
         buffer: &mut DisplayBuffer,
-        color: Color,
     ) {
         let m_rot_x = Matrix4::from_rows(&[
             RowVector4::new(1.0, 0.0, 0.0, 0.0),
@@ -289,40 +258,51 @@ impl Mesh {
         let view: Matrix4<f32> = build_view_matrix(eye, lookat, Vector3::new(0.0, 1.0, 0.0));
         let projection: Matrix4<f32> = build_perspective_matrix(0.1, 5.0, 78.0, aspect_ratio);
 
-        for (i, t) in self.faces.iter().enumerate() {
+        for t in self.faces.iter() {
             let face_world = t.transform(model);
-
             let reduce_dim = Matrix3x4::from_rows(&[
                 RowVector4::new(1.0, 0.0, 0.0, 0.0),
                 RowVector4::new(0.0, 1.0, 0.0, 0.0),
                 RowVector4::new(0.0, 0.0, 1.0, 0.0),
             ]);
-            let triangle_world_3d = Triangle {
-                v0: reduce_dim * face_world.v0,
-                v1: reduce_dim * face_world.v1,
-                v2: reduce_dim * face_world.v2,
+            let triangle_world_3d = Face {
+                v0: Vertex {
+                    position: reduce_dim * face_world.v0.position,
+                    color: face_world.v0.color,
+                    normal: face_world.v0.normal,
+                },
+                v1: Vertex {
+                    position: reduce_dim * face_world.v1.position,
+                    color: face_world.v1.color,
+                    normal: face_world.v1.normal,
+                },
+                v2: Vertex {
+                    position: reduce_dim * face_world.v2.position,
+                    color: face_world.v2.color,
+                    normal: face_world.v2.normal,
+                },
             };
 
             // Light vector is a unit vector from the mesh to the light source.
-            let n = self.face_normals[i];
-            let n = model * Vector4::new(n.x, n.y, n.z, 0.0);
-            let n = Vector3::new(n.x, n.y, n.z);
-            let light_vector = (eye - triangle_world_3d.center_point()).normalize();
-            let brightness = light_vector.dot(&n);
+            let brightness_v0 = (eye - triangle_world_3d.v0.position)
+                .normalize()
+                .dot(&triangle_world_3d.v0.normal);
+            let brightness_v1 = (eye - triangle_world_3d.v1.position)
+                .normalize()
+                .dot(&triangle_world_3d.v1.normal);
+            let brightness_v2 = (eye - triangle_world_3d.v2.position)
+                .normalize()
+                .dot(&triangle_world_3d.v2.normal);
+            assert!(brightness_v0 <= 1.0);
+            assert!(brightness_v1 <= 1.0);
+            assert!(brightness_v2 <= 1.0);
 
             // If the dot product is positive, the light is hitting the outer
             // surface of the mesh. In this case the value of the dot product
             // determines the intensity of the reflected light. If the dot
             // product is negative, the light is hitting the inner surface of
             // the mesh and we can simply ignore the triangle (not render it)
-            if brightness > 0.0 {
-                let color = Color {
-                    r: (brightness * color.r as f32) as u8,
-                    g: (brightness * color.g as f32) as u8,
-                    b: (brightness * color.b as f32) as u8,
-                    a: 255,
-                };
-
+            if brightness_v0 > 0.0 || brightness_v1 > 0.0 || brightness_v2 > 0.0 {
                 // Step 2: World to camera space
                 let triangle_view = face_world.transform(view);
 
@@ -332,45 +312,83 @@ impl Mesh {
                 // Step 4.2: PERSPECTIVE DIVIDE (normalization)
                 // Perspective division, far away points moved closer to origin
                 // To screen space. All visible points between [-1, 1].
-                let t_ndc = Triangle {
-                    v0: Vector3::new(
-                        triangle_camera.v0.x / triangle_camera.v0.w,
-                        triangle_camera.v0.y / triangle_camera.v0.w,
-                        triangle_camera.v0.z, // / triangle_camera.v0.w,
-                    ),
-                    v1: Vector3::new(
-                        triangle_camera.v1.x / triangle_camera.v1.w,
-                        triangle_camera.v1.y / triangle_camera.v1.w,
-                        triangle_camera.v1.z, // / triangle_camera.v1.w,
-                    ),
-                    v2: Vector3::new(
-                        triangle_camera.v2.x / triangle_camera.v2.w,
-                        triangle_camera.v2.y / triangle_camera.v2.w,
-                        triangle_camera.v2.z, // / triangle_camera.v2.w,
-                    ),
+                let t_ndc = Face {
+                    v0: Vertex {
+                        position: Vector3::new(
+                            triangle_camera.v0.position.x / triangle_camera.v0.position.w,
+                            triangle_camera.v0.position.y / triangle_camera.v0.position.w,
+                            triangle_camera.v0.position.z,
+                        ),
+                        color: Color {
+                            r: (triangle_camera.v0.color.r as f32 * brightness_v0) as u8,
+                            g: (triangle_camera.v0.color.g as f32 * brightness_v0) as u8,
+                            b: (triangle_camera.v0.color.b as f32 * brightness_v0) as u8,
+                            a: (triangle_camera.v0.color.a as f32 * brightness_v0) as u8,
+                        },
+                        normal: triangle_camera.v0.normal,
+                    },
+                    v1: Vertex {
+                        position: Vector3::new(
+                            triangle_camera.v1.position.x / triangle_camera.v1.position.w,
+                            triangle_camera.v1.position.y / triangle_camera.v1.position.w,
+                            triangle_camera.v1.position.z,
+                        ),
+                        color: Color {
+                            r: (triangle_camera.v1.color.r as f32 * brightness_v1) as u8,
+                            g: (triangle_camera.v1.color.g as f32 * brightness_v1) as u8,
+                            b: (triangle_camera.v1.color.b as f32 * brightness_v1) as u8,
+                            a: (triangle_camera.v1.color.a as f32 * brightness_v1) as u8,
+                        },
+                        normal: triangle_camera.v1.normal,
+                    },
+                    v2: Vertex {
+                        position: Vector3::new(
+                            triangle_camera.v2.position.x / triangle_camera.v2.position.w,
+                            triangle_camera.v2.position.y / triangle_camera.v2.position.w,
+                            triangle_camera.v2.position.z,
+                        ),
+                        color: Color {
+                            r: (triangle_camera.v2.color.r as f32 * brightness_v2) as u8,
+                            g: (triangle_camera.v2.color.g as f32 * brightness_v2) as u8,
+                            b: (triangle_camera.v2.color.b as f32 * brightness_v2) as u8,
+                            a: (triangle_camera.v2.color.a as f32 * brightness_v2) as u8,
+                        },
+                        normal: triangle_camera.v2.normal,
+                    },
                 };
 
                 // Step 5: Viewport transform
-                let mut t_viewport = Triangle {
-                    v0: Vector3::new(
-                        (1.0 + t_ndc.v0.x) * 0.5 * buffer.width as f32,
-                        (1.0 + t_ndc.v0.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v0.z,
-                    ),
-                    v1: Vector3::new(
-                        (1.0 + t_ndc.v1.x) * 0.5 * buffer.width as f32,
-                        (1.0 + t_ndc.v1.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v1.z,
-                    ),
-                    v2: Vector3::new(
-                        (1.0 + t_ndc.v2.x) * 0.5 * buffer.width as f32,
-                        (1.0 + t_ndc.v2.y) * 0.5 * buffer.height as f32,
-                        t_ndc.v2.z,
-                    ),
+                let t_viewport = Face {
+                    v0: Vertex {
+                        position: Vector3::new(
+                            (1.0 + t_ndc.v0.position.x) * 0.5 * buffer.width as f32,
+                            (1.0 + t_ndc.v0.position.y) * 0.5 * buffer.height as f32,
+                            t_ndc.v0.position.z,
+                        ),
+                        color: t_ndc.v0.color,
+                        normal: t_ndc.v0.normal,
+                    },
+                    v1: Vertex {
+                        position: Vector3::new(
+                            (1.0 + t_ndc.v1.position.x) * 0.5 * buffer.width as f32,
+                            (1.0 + t_ndc.v1.position.y) * 0.5 * buffer.height as f32,
+                            t_ndc.v1.position.z,
+                        ),
+                        color: t_ndc.v1.color,
+                        normal: t_ndc.v1.normal,
+                    },
+                    v2: Vertex {
+                        position: Vector3::new(
+                            (1.0 + t_ndc.v2.position.x) * 0.5 * buffer.width as f32,
+                            (1.0 + t_ndc.v2.position.y) * 0.5 * buffer.height as f32,
+                            t_ndc.v2.position.z,
+                        ),
+                        color: t_ndc.v2.color,
+                        normal: t_ndc.v2.normal,
+                    },
                 };
 
-                t_viewport.order_by_y();
-                t_viewport.render(color, buffer);
+                t_viewport.render(buffer);
             }
         }
     }
