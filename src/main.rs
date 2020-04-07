@@ -15,80 +15,152 @@ use std::fs::File;
 use std::io::BufReader;
 
 const FPS: f32 = 60.0;
-const WIN_WIDTH: usize = 1024;
-const WIN_HEIGHT: usize = 768;
+const WIN_WIDTH: usize = 1920;
+const WIN_HEIGHT: usize = 1080;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() != 2 {
-        println!("Usage: renderer [FILE]");
-        return;
-    }
-
-    let f = match File::open(&args[1]) {
+fn load_model_from_file(file_name: &String) -> core::Mesh {
+    let mut model = core::Mesh::new();
+    let f = match File::open(file_name) {
         Ok(v) => v,
         Err(_e) => {
-            println!("Error: Could not open file {}", args[1]);
-            return;
+            println!("Error: Could not open file {}", file_name);
+            return model;
         }
     };
 
-    let mut clock = Clock::start();
-    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    let mut window = RenderWindow::new(vm, "sw-renderer", Style::CLOSE, &Default::default());
-
-    window.set_vertical_sync_enabled(true);
-
-    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
-
     let input = BufReader::new(f);
     let obj: Obj = load_obj(input).unwrap();
-    let mut model = core::Mesh::new();
 
     let mut f = 0;
     while f < obj.indices.len() {
         assert!(f + 2 < obj.indices.len());
+        let white = renderer::core::Color {
+            r: 255,
+            g: 255,
+            b: 255,
+            a: 255,
+        };
 
         let i = obj.indices[f] as usize;
         let j = obj.indices[f + 1] as usize;
         let k = obj.indices[f + 2] as usize;
 
-        model.faces.push(core::Triangle {
-            v0: Vector4::new(
-                obj.vertices[i].position[0],
-                obj.vertices[i].position[1],
-                obj.vertices[i].position[2],
-                1.0,
-            ),
-            v1: Vector4::new(
-                obj.vertices[j].position[0],
-                obj.vertices[j].position[1],
-                obj.vertices[j].position[2],
-                1.0,
-            ),
-            v2: Vector4::new(
-                obj.vertices[k].position[0],
-                obj.vertices[k].position[1],
-                obj.vertices[k].position[2],
-                1.0,
-            ),
+        model.faces.push(core::Face {
+            v0: renderer::core::Vertex {
+                position: Vector4::new(
+                    obj.vertices[i].position[0],
+                    obj.vertices[i].position[1],
+                    obj.vertices[i].position[2],
+                    1.0,
+                ),
+                color: white,
+                normal: Vector3::new(
+                    obj.vertices[i].normal[0],
+                    obj.vertices[i].normal[1],
+                    obj.vertices[i].normal[2],
+                ),
+            },
+            v1: renderer::core::Vertex {
+                position: Vector4::new(
+                    obj.vertices[j].position[0],
+                    obj.vertices[j].position[1],
+                    obj.vertices[j].position[2],
+                    1.0,
+                ),
+                color: white,
+                normal: Vector3::new(
+                    obj.vertices[j].normal[0],
+                    obj.vertices[j].normal[1],
+                    obj.vertices[j].normal[2],
+                ),
+            },
+            v2: renderer::core::Vertex {
+                position: Vector4::new(
+                    obj.vertices[k].position[0],
+                    obj.vertices[k].position[1],
+                    obj.vertices[k].position[2],
+                    1.0,
+                ),
+                color: white,
+                normal: Vector3::new(
+                    obj.vertices[k].normal[0],
+                    obj.vertices[k].normal[1],
+                    obj.vertices[k].normal[2],
+                ),
+            },
         });
-
-        model.face_normals.append(&mut vec![Vector3::new(
-            obj.vertices[i].normal[0],
-            obj.vertices[i].normal[1],
-            obj.vertices[i].normal[2],
-        )]);
 
         f = f + 3;
     }
+
+    return model;
+}
+
+fn load_default_model() -> core::Mesh {
+    let mut model = core::Mesh::new();
+    let red = renderer::core::Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    let green = renderer::core::Color {
+        r: 0,
+        g: 255,
+        b: 0,
+        a: 255,
+    };
+    let blue = renderer::core::Color {
+        r: 0,
+        g: 0,
+        b: 255,
+        a: 255,
+    };
+    let side_len = 1.0;
+
+    model.faces.push(core::Face {
+        v0: renderer::core::Vertex {
+            position: Vector4::new(0.0, side_len, 0.0, 1.0),
+            color: red,
+            normal: Vector3::new(0.0, 0.0, 1.0),
+        },
+        v1: renderer::core::Vertex {
+            position: Vector4::new(-side_len, 0.0, 0.0, 1.0),
+            color: green,
+            normal: Vector3::new(0.0, 0.0, 1.0),
+        },
+        v2: renderer::core::Vertex {
+            position: Vector4::new(side_len, 0.0, 0.0, 1.0),
+            color: blue,
+            normal: Vector3::new(0.0, 0.0, 1.0),
+        },
+    });
+
+    return model;
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let mut model = if args.len() == 2 {
+        load_model_from_file(&args[1])
+    } else {
+        println!("Usage: renderer [FILE]");
+        println!("No model file given. Loading default model");
+        load_default_model()
+    };
+
+    let mut clock = Clock::start();
+    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
+    let mut window = RenderWindow::new(vm, "sw-renderer", Style::CLOSE, &Default::default());
+    window.set_vertical_sync_enabled(true);
 
     model.translate(Vector3::new(0.0, 0.0, -6.0));
 
     let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
     let mut vel = Vector3::new(0.0, 0.0, 0.0);
     let mut db = core::DisplayBuffer::new(WIN_WIDTH, WIN_HEIGHT, 4);
+    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
+    let mut mouselook_enabled = false;
 
     loop {
         let mut sprite = Sprite::new();
@@ -159,7 +231,12 @@ fn main() {
                 | Event::KeyReleased { code: Key::J, .. } => {
                     vel.z = 0.0;
                 }
-                Event::KeyPressed { code: Key::R, .. } => {}
+                Event::KeyPressed { code: Key::M, .. } => {
+                    mouselook_enabled = true;
+                }
+                Event::KeyPressed { code: Key::R, .. } => {
+                    model.rotate(Vector3::new(0.0, 0.01, 0.0));
+                }
                 _ => {}
             }
         }
@@ -168,23 +245,22 @@ fn main() {
         eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
         eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
 
-        let mouse_x = window.mouse_position().x;
-        let mouse_y = WIN_HEIGHT as i32 - window.mouse_position().y;
-        let lookat_x = (mouse_x as f32 - ((WIN_WIDTH / 2) as f32)) / (WIN_WIDTH as f32);
-        let lookat_y = (mouse_y as f32 - ((WIN_HEIGHT / 2) as f32)) / (WIN_HEIGHT as f32);
-        let _lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
-        let lookat = Vector3::new(0.0, 0.0, -10.0);
-        let red = renderer::core::Color {
-            r: 255,
-            g: 0,
-            b: 0,
-            a: 255,
+        let (lookat_x, lookat_y) = if mouselook_enabled {
+            let mouse_x = window.mouse_position().x;
+            let mouse_y = WIN_HEIGHT as i32 - window.mouse_position().y;
+            (
+                (mouse_x as f32 - ((WIN_WIDTH / 2) as f32)) / (WIN_WIDTH as f32),
+                (mouse_y as f32 - ((WIN_HEIGHT / 2) as f32)) / (WIN_HEIGHT as f32),
+            )
+        } else {
+            (0.0, 0.0)
         };
+
+        let lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
 
         db.clear();
 
-        model.rotate(Vector3::new(0.001, 0.001, 0.001));
-        model.render(eye_pos, lookat, &mut db, red);
+        model.render(eye_pos, lookat, &mut db);
 
         if clock.elapsed_time().as_seconds() > 1.0 / FPS {
             clock.restart();
