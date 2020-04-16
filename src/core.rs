@@ -40,6 +40,11 @@ pub struct Face<T: Copy> {
 impl Face<Vector4<f32>> {
     /// Perform a linear transformation to all vertices of the triangle
     pub fn transform(&self, m: Matrix4<f32>) -> Face<Vector4<f32>> {
+        // Normal vectors cannot simply be transformed with the matrix m like
+        // vertex coordinates. Instead the scales must be inverted. So when we
+        // scale the vertices by factor x in any axis, we must scale the normals
+        // by 1/x. This is achieved by transforming the normals using the
+        // inverse transpose of matrix m
         let m_normal = m
             .fixed_slice::<nalgebra::U3, nalgebra::U3>(0, 0)
             .try_inverse()
@@ -220,6 +225,7 @@ impl Mesh {
     /// # Arguments
     ///
     /// * `eye` - Position of the camera eye
+    /// * 'lookat' - Focus point of the eye
     /// * `buffer` - Display buffer (render target)
     pub fn render(
         self: &Mesh,
@@ -393,11 +399,11 @@ impl Mesh {
         }
     }
 
-    /// Translate (move) a mesh in spce
+    /// Translate (move) a mesh in space
     ///
     /// # Arguments
     ///
-    /// * `translation` - Vector that specifies the desired displacement
+    /// * `translation` - Vector that specifies the displacement
     pub fn translate(self: &mut Mesh, translation: Vector3<f32>) {
         let xform = Matrix4::from_rows(&[
             RowVector4::new(1.0, 0.0, 0.0, translation.x),
@@ -412,7 +418,7 @@ impl Mesh {
     ///
     /// # Arguments
     ///
-    /// * `angle` - Desired rotation angle around each cartesian axis in radians
+    /// * `angle` - Rotation angle around each cartesian axis in radians
     pub fn rotate(self: &mut Mesh, angle: Vector3<f32>) {
         self.angle.x = self.angle.x + angle.x;
         self.angle.y = self.angle.y + angle.y;

@@ -1,21 +1,37 @@
 use core::{Color, DisplayBuffer, Face, Renderable};
 use na::{Vector2, Vector3};
 
+/// Get barycentric coordinates for a point P with respect to a triangle ABC
+///
+/// # Arguments
+///
+/// * 'a' Vertex A of the triangle ABC
+/// * 'b' Vertex B of the triangle ABC
+/// * 'c' Vertex C of the triangle ABC
+/// * 'p' Point P for which to calculate the barycentric coordinates
+///
+/// Barycentric coordinates (u, v, w) are defined such that uA + vB + wC = P
+/// Some useful properties
+/// - If u, v, w all are >= 0 then point P is inside the triangle ABC
+/// - If any of u, v, w is < 0 then point P is outside the triangle ABC
+/// - u, v, w can be used to interpolate the vertex attributes inside the triangle
+/// - u + v + w = 1
+///
 fn get_barycentric(
-    v0: Vector2<f32>,
-    v1: Vector2<f32>,
-    v2: Vector2<f32>,
+    a: Vector2<f32>,
+    b: Vector2<f32>,
+    c: Vector2<f32>,
     p: Vector2<f32>,
 ) -> (f32, f32, f32) {
-    let a = v1 - v0;
-    let b = v2 - v0;
-    let c = p - v0;
+    let v0 = b - a;
+    let v1 = c - a;
+    let v2 = p - a;
 
-    let d00 = a.dot(&a);
-    let d01 = a.dot(&b);
-    let d11 = b.dot(&b);
-    let d20 = c.dot(&a);
-    let d21 = c.dot(&b);
+    let d00 = v0.dot(&v0);
+    let d01 = v0.dot(&v1);
+    let d11 = v1.dot(&v1);
+    let d20 = v2.dot(&v0);
+    let d21 = v2.dot(&v1);
     let denom = d00 * d11 - d01 * d01;
 
     let v = (d11 * d20 - d01 * d21) / denom;
