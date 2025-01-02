@@ -135,6 +135,12 @@ pub struct Color {
     pub a: u8,
 }
 
+impl Color {
+    pub fn to_u32(&self) -> u32 {
+        return ((self.a as u32) << 24) | ((self.b as u32) << 16) | ((self.g as u32) << 8) | (self.r as u32);
+    }
+}
+
 /// Display buffer defines a memory area that is used for rendering a raw image
 pub struct DisplayBuffer {
     /// Width of the display area in pixels

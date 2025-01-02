@@ -1,22 +1,19 @@
 extern crate nalgebra as na;
 extern crate obj;
 extern crate renderer;
-extern crate sfml;
+extern crate minifb;
 
 use na::{Vector3, Vector4};
 use renderer::*;
-use sfml::graphics::{Color, RenderTarget, RenderWindow, Sprite, Texture};
-use sfml::system::Clock;
-use sfml::window::{Event, Key, Style, VideoMode};
 use std::env;
-
 use obj::*;
 use std::fs::File;
 use std::io::BufReader;
+use minifb::{Key, Window, WindowOptions};
 
-const FPS: f32 = 60.0;
-const WIN_WIDTH: usize = 1920;
-const WIN_HEIGHT: usize = 1080;
+const FPS: usize = 60;
+const WIN_WIDTH: usize = 800;
+const WIN_HEIGHT: usize = 600;
 
 fn load_model_from_file(file_name: &String) -> core::Mesh {
     let mut model = core::Mesh::new();
@@ -125,12 +122,12 @@ fn load_default_model() -> core::Mesh {
             normal: Vector3::new(0.0, 0.0, 1.0),
         },
         v1: renderer::core::Vertex {
-            position: Vector4::new(-side_len, 0.0, 0.0, 1.0),
+            position: Vector4::new(-side_len/2.0, 0.0, 0.0, 1.0),
             color: green,
             normal: Vector3::new(0.0, 0.0, 1.0),
         },
         v2: renderer::core::Vertex {
-            position: Vector4::new(side_len, 0.0, 0.0, 1.0),
+            position: Vector4::new(side_len/2.0, 0.0, 0.0, 1.0),
             color: blue,
             normal: Vector3::new(0.0, 0.0, 1.0),
         },
@@ -149,129 +146,47 @@ fn main() {
         load_default_model()
     };
 
-    let mut clock = Clock::start();
-    let vm = VideoMode::new(WIN_WIDTH as u32, WIN_HEIGHT as u32, 32);
-    let mut window = RenderWindow::new(vm, "sw-renderer", Style::CLOSE, &Default::default());
-    window.set_vertical_sync_enabled(true);
-
     model.translate(Vector3::new(0.0, 0.0, -6.0));
 
-    let mut eye_pos = Vector3::new(0.0, 0.0, 0.0);
-    let mut vel = Vector3::new(0.0, 0.0, 0.0);
-    let mut db = core::DisplayBuffer::new(WIN_WIDTH, WIN_HEIGHT, 4);
-    let mut texture = Texture::new(WIN_WIDTH as u32, WIN_HEIGHT as u32).unwrap();
-    let mut mouselook_enabled = false;
+    let eye_pos = Vector3::new(0.0, 0.0, 0.0);
+    let mut _vel = Vector3::new(0.0, 0.0, 0.0);
+    let mut db = core::DisplayBuffer::new(WIN_WIDTH as usize, WIN_HEIGHT as usize, 4);
+    let mut _mouselook_enabled = false;
+    let lookat = Vector3::new(0.0, 0.0, -1.0);
+    let mut buffer: Vec<u32> = vec![0; WIN_WIDTH * WIN_HEIGHT];
 
-    loop {
-        let mut sprite = Sprite::new();
+    let mut window = Window::new(
+        "Test - ESC to exit",
+        WIN_WIDTH,
+        WIN_HEIGHT,
+        WindowOptions::default(),
+    )
+    .unwrap_or_else(|e| {
+        panic!("{}", e);
+    });
 
-        loop {
-            let event = match window.poll_event() {
-                Some(val) => val,
-                None => break,
-            };
+    window.set_target_fps(FPS);
 
-            match event {
-                Event::Closed
-                | Event::KeyPressed { code: Key::Q, .. }
-                | Event::KeyPressed {
-                    code: Key::Escape, ..
-                } => return,
-                Event::KeyPressed { code: Key::D, .. }
-                | Event::KeyPressed {
-                    code: Key::Right, ..
-                }
-                | Event::KeyPressed { code: Key::L, .. } => {
-                    vel.x = 10.0;
-                }
-                Event::KeyReleased { code: Key::D, .. }
-                | Event::KeyReleased {
-                    code: Key::Right, ..
-                }
-                | Event::KeyReleased { code: Key::L, .. } => {
-                    vel.x = 0.0;
-                }
-                Event::KeyPressed { code: Key::A, .. }
-                | Event::KeyPressed {
-                    code: Key::Left, ..
-                }
-                | Event::KeyPressed { code: Key::H, .. } => {
-                    vel.x = -10.0;
-                }
-
-                Event::KeyReleased { code: Key::A, .. }
-                | Event::KeyReleased {
-                    code: Key::Left, ..
-                }
-                | Event::KeyReleased { code: Key::H, .. } => {
-                    vel.x = 0.0;
-                }
-
-                Event::KeyPressed { code: Key::W, .. }
-                | Event::KeyPressed { code: Key::Up, .. }
-                | Event::KeyPressed { code: Key::K, .. } => {
-                    vel.z = -1.0;
-                }
-                Event::KeyReleased { code: Key::W, .. }
-                | Event::KeyReleased { code: Key::Up, .. }
-                | Event::KeyReleased { code: Key::K, .. } => {
-                    vel.z = 0.0;
-                }
-                Event::KeyPressed { code: Key::S, .. }
-                | Event::KeyPressed {
-                    code: Key::Down, ..
-                }
-                | Event::KeyPressed { code: Key::J, .. } => {
-                    vel.z = 1.0;
-                }
-                Event::KeyReleased { code: Key::S, .. }
-                | Event::KeyReleased {
-                    code: Key::Down, ..
-                }
-                | Event::KeyReleased { code: Key::J, .. } => {
-                    vel.z = 0.0;
-                }
-                Event::KeyPressed { code: Key::M, .. } => {
-                    mouselook_enabled = true;
-                }
-                Event::KeyPressed { code: Key::R, .. } => {
-                    model.rotate(Vector3::new(0.0, 0.01, 0.0));
-                }
-                _ => {}
-            }
-        }
-
-        eye_pos.x = eye_pos.x + vel.x * (1.0 / FPS);
-        eye_pos.y = eye_pos.y + vel.y * (1.0 / FPS);
-        eye_pos.z = eye_pos.z + vel.z * (1.0 / FPS);
-
-        let (lookat_x, lookat_y) = if mouselook_enabled {
-            let mouse_x = window.mouse_position().x;
-            let mouse_y = WIN_HEIGHT as i32 - window.mouse_position().y;
-            (
-                (mouse_x as f32 - ((WIN_WIDTH / 2) as f32)) / (WIN_WIDTH as f32),
-                (mouse_y as f32 - ((WIN_HEIGHT / 2) as f32)) / (WIN_HEIGHT as f32),
-            )
-        } else {
-            (0.0, 0.0)
-        };
-
-        let lookat = Vector3::new(lookat_x as f32, lookat_y as f32, -1.0);
-
+    while window.is_open() && !window.is_key_down(Key::Escape) {
         db.clear();
-
         model.render(eye_pos, lookat, &mut db);
 
-        if clock.elapsed_time().as_seconds() > 1.0 / FPS {
-            clock.restart();
-            unsafe {
-                texture.update_from_pixels(&*db.data, db.width as u32, db.height as u32, 0, 0);
+        for i in 0..WIN_WIDTH {
+            for j in 0..WIN_HEIGHT {
+                let idx = (i + j * WIN_WIDTH) * 4;
+                let color = core::Color {
+                    r: db.data[idx],
+                    g: db.data[idx + 1],
+                    b: db.data[idx + 2],
+                    a: db.data[idx + 3],
+                };
+                buffer[i + j * WIN_WIDTH] = color.to_u32();
             }
-            sprite.set_texture(&texture, false);
-
-            window.clear(Color::BLACK);
-            window.draw(&sprite);
-            window.display();
         }
+
+        window
+            .update_with_buffer(&buffer, WIN_WIDTH, WIN_HEIGHT)
+            .unwrap();
     }
+
 }

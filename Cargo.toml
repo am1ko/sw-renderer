@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Mikko Ala-Louko <mikko.alalouko@gmail.com>"]
 
 [dependencies]
-sfml = "*"
 nalgebra = '*'
 libc = "*"
 obj-rs = "0.5"
+minifb = "0.27"
 
 [lib]
 name = "renderer"
